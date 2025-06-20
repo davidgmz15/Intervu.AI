@@ -5,17 +5,55 @@ import asyncio
 INTERVIEW_QUESTION_BANK = {
     "software_engineering": [
         {
-            "main": """Given an input string s, reverse the order of the words.cA word is defined as a sequence of non-space characters. 
-            The words in s will be separated by at least one space. Return a string of the words in reverse order concatenated by a single space.
-            Note that s may contain leading or trailing spaces or multiple spaces between two words. The returned string should only have a single 
-            space separating the words. Do not include any extra spaces.
-            For example, if you input "the sky is blue", the output should be "blue is the sky", or if you input "  hello    world   ", the output should be "world hello", removing all the spaces.""",
+            "main": """Given an integer array nums, return all the triplets [nums[i], nums[j], nums[k]] where 
+            nums[i] + nums[j] + nums[k] == 0, and the indices i, j and k are all distinct.
+            The output should not contain any duplicate triplets. You may return the output and the triplets in any order.
+            For example, if the input is an array 'nums' containing [-1,0,1,2,-1,-4] the output would be [-1,-1,2] and [-1,0,1].
+            If the only possible triple does not sum up to 0, the output should be empty""",
 
             "hints": [
-                "What is the brute-force solution?",
-                "What data structure would you use to solve this efficiently?",
-                "What is the time and space complexity of your solution?",
-                "How would you handle edge cases?",
+                "You should aim for a solution with O(n^2) time and O(1) space, where n is the size of the input array.",
+                "A brute force solution would be to check for every triplet in the array. This would be an O(n^3) solution. Can you think of a better way?",
+                """We can iterate through nums with index i and get nums[i] = -(nums[j] + nums[k]) after rearranging the equation, making -nums[i] = nums[j] + 
+                nums[k]. For each index i, we should efficiently calculate the j and k pairs without duplicates. Which algorithm is suitable to find j and k pairs?""",
+                """To efficiently find the j and k pairs, we run the two pointer approach on the elements to the right of index i as the array is sorted. When we run two 
+                pointer algorithm, consider j and k as pointers (j is at left, k is at right) and target = -nums[i], if the current sum num[j] + nums[k] < target then we 
+                need to increase the value of current sum by incrementing j pointer. Else if the current sum num[j] + nums[k] > target then we should decrease the value of 
+                current sum by decrementing k pointer. How do you deal with duplicates?""",
+                """When the current sum nums[j] + nums[k] == target add this pair to the result. We can move j or k pointer until j < k and the pairs are repeated. 
+                This ensures that no duplicate pairs are added to the result.""",
+            ]
+        },
+        {
+            "main": """Design an algorithm to encode a list of strings to a single string. The encoded string is then decoded back to the original list of strings.
+            Please implement encode and decode. For example, if the input is ["neet","code","love","you"] the output would be ["neet","code","love","you"] or if the i
+            input is ["we","say",":","yes"] teh output would be ["we","say",":","yes"]""",
+
+            "hints": [
+                "You should aim for a solution with O(m) time for each encode() and decode() call and O(m+n) space, where m is the sum of lengths of all the strings and n is the number of strings.",
+                "A naive solution would be to use a non-ascii character as a delimiter. Can you think of a better way?",
+                "Try to encode and decode the strings using a smart approach based on the lengths of each string. How can you differentiate between the lengths and any numbers that might be present in the strings?",
+                """We can use an encoding approach where we start with a number representing the length of the string, followed by a separator character 
+                (let's use # for simplicity), and then the string itself. To decode, we read the number until we reach a #, then use that number to read the specified number of characters as the string.""",
+            ]
+        },
+        {
+            "main": """You are given an array of length n which was originally sorted in ascending order. It has now been rotated between 1 and n times. For example, the array nums of [1,2,3,4,5,6] might become
+            [3,4,5,6,1,2] if it was rotated 4 times or [1,2,3,4,5,6] if it was rotated 6 times. Given the rotated sorted array nums and an integer target, return the index of target within nums, or -1 if it is not present.
+            You may assume all elements in the sorted rotated array nums are unique, A solution that runs in O(n) time is trivial, can you write an algorithm that runs in O(log n) time?
+            For example, if an array nums contains [3,4,5,6,1,2], and teh traget is one, the output should be 4. Or if nums contains [3,4,5,6,0,1,2] and the target is 4, the output should be -1.""",
+
+            "hints": [
+                "You should aim for a solution with O(logn) time and O(1) space, where n is the size of the input array.",
+                "A brute force solution would be to do a linear search on the array to find the target element. This would be an O(n) solution. Can you think of a better way? Maybe an efficient searching algorithm is helpful.",
+                """Given that the array is rotated after sorting, elements from the right end are moved to the left end one by one, creating two sorted segments separated by a deflection point due to the rotation. 
+                For example, consider the array [3, 4, 1, 2], which is rotated twice, resulting in two sorted segments: [3, 4] and [1, 2]. In a fully sorted array, it's easy to find the target. So, if you can identify 
+                the deflection point (cut), you can perform a binary search on both segments to find the target element. Can you use binary search to find this cut?""",
+                """We perform a binary search on the array with pointers l and r, which belong to two different sorted segments. For example, in [3, 4, 5, 6, 1, 2, 3], l = 0, r = 6, and mid = 3. 
+                At least two of l, mid, and r will always be in the same sorted segment. Can you find conditions to eliminate one half and continue the binary search? Perhaps analyzing all possible conditions for l, mid, and r may help.""",
+                """There are two cases: l and mid belong to the left sorted segment, or mid and r belong to the right sorted segment. If l and mid are in the same segment, nums[l] < nums[mid], so the pivot index must lie in the right part. 
+                If mid and r are in the same segment, nums[mid] < nums[r], so the pivot index must lie in the left part. After the binary search, we eventually find the pivot index. Once the pivot is found, it's straightforward to select the 
+                segment where the target lies and perform a binary search on that segement to find its position. If we don't find the target, we return -1.""",
             ]
         },
         
