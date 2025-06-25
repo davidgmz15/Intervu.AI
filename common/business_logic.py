@@ -1,26 +1,27 @@
-import asyncio
+import random
+import logging
 
-# --- INTERVIEW ASSISTANT LOGIC ---
+logger = logging.getLogger(__name__)
 
+# Interview question bank organized by industry
 INTERVIEW_QUESTION_BANK = {
     "software_engineering": [
         {
-            "main": """Given an integer array nums, return all the triplets [nums[i], nums[j], nums[k]] where 
-            nums[i] + nums[j] + nums[k] == 0, and the indices i, j and k are all distinct.
+            "main": """Given an integer array nums, return all the triplets nums i, nums j, and nums k where 
+            nums i plus nums j plus nums k equal 0, and the indices i, j and k are all distinct.
             The output should not contain any duplicate triplets. You may return the output and the triplets in any order.
-            For example, if the input is an array 'nums' containing [-1,0,1,2,-1,-4] the output would be [-1,-1,2] and [-1,0,1].
+            For example, if the input is an array 'nums' containing negative 1 , 0, 1, 2, negative 1, and negative 4 the output would be negative 1, negative 1, 2 and negative 1, 0, 1.
             If the only possible triple does not sum up to 0, the output should be empty""",
-
             "hints": [
-                "You should aim for a solution with O(n^2) time and O(1) space, where n is the size of the input array.",
-                "A brute force solution would be to check for every triplet in the array. This would be an O(n^3) solution. Can you think of a better way?",
-                """We can iterate through nums with index i and get nums[i] = -(nums[j] + nums[k]) after rearranging the equation, making -nums[i] = nums[j] + 
-                nums[k]. For each index i, we should efficiently calculate the j and k pairs without duplicates. Which algorithm is suitable to find j and k pairs?""",
+                "You should aim for a solution with O of n squared time and O of 1 space, where n is the size of the input array.",
+                "A brute force solution would be to check for every triplet in the array. This would be an O of n cubed solution. Can you think of a better way?",
+                """We can iterate through nums with index i and get nums i equals negative nums j plus nums k after rearranging the equation, making negative nums i equal nums j plus 
+                nums k. For each index i, we should efficiently calculate the j and k pairs without duplicates. Which algorithm is suitable to find j and k pairs?""",
                 """To efficiently find the j and k pairs, we run the two pointer approach on the elements to the right of index i as the array is sorted. When we run two 
-                pointer algorithm, consider j and k as pointers (j is at left, k is at right) and target = -nums[i], if the current sum num[j] + nums[k] < target then we 
-                need to increase the value of current sum by incrementing j pointer. Else if the current sum num[j] + nums[k] > target then we should decrease the value of 
+                pointer algorithm, consider j and k as pointers (j is at left, k is at right) and target equals negative nums i, if the current sum num j plus nums k is less than the target then we 
+                need to increase the value of current sum by incrementing j pointer. Else if the current sum num j plus nums k is greater than the target then we should decrease the value of 
                 current sum by decrementing k pointer. How do you deal with duplicates?""",
-                """When the current sum nums[j] + nums[k] == target add this pair to the result. We can move j or k pointer until j < k and the pairs are repeated. 
+                """When the current sum nums j plus nums k equals the target add this pair to the result. We can move j or k pointer until j is less than k and the pairs are repeated. 
                 This ensures that no duplicate pairs are added to the result.""",
             ]
         },
@@ -28,7 +29,6 @@ INTERVIEW_QUESTION_BANK = {
             "main": """Design an algorithm to encode a list of strings to a single string. The encoded string is then decoded back to the original list of strings.
             Please implement encode and decode. For example, if the input is ["neet","code","love","you"] the output would be ["neet","code","love","you"] or if the i
             input is ["we","say",":","yes"] teh output would be ["we","say",":","yes"]""",
-
             "hints": [
                 "You should aim for a solution with O(m) time for each encode() and decode() call and O(m+n) space, where m is the sum of lengths of all the strings and n is the number of strings.",
                 "A naive solution would be to use a non-ascii character as a delimiter. Can you think of a better way?",
@@ -42,7 +42,6 @@ INTERVIEW_QUESTION_BANK = {
             [3,4,5,6,1,2] if it was rotated 4 times or [1,2,3,4,5,6] if it was rotated 6 times. Given the rotated sorted array nums and an integer target, return the index of target within nums, or -1 if it is not present.
             You may assume all elements in the sorted rotated array nums are unique, A solution that runs in O(n) time is trivial, can you write an algorithm that runs in O(log n) time?
             For example, if an array nums contains [3,4,5,6,1,2], and teh traget is one, the output should be 4. Or if nums contains [3,4,5,6,0,1,2] and the target is 4, the output should be -1.""",
-
             "hints": [
                 "You should aim for a solution with O(logn) time and O(1) space, where n is the size of the input array.",
                 "A brute force solution would be to do a linear search on the array to find the target element. This would be an O(n) solution. Can you think of a better way? Maybe an efficient searching algorithm is helpful.",
@@ -56,18 +55,32 @@ INTERVIEW_QUESTION_BANK = {
                 segment where the target lies and perform a binary search on that segement to find its position. If we don't find the target, we return -1.""",
             ]
         },
-        
     ],
     "consulting": [
         {
-            "case": "A beverage company wants to enter a new market. How would you approach this case?",
+            "case": """The client is a manufacturer and distributor of infant formula. They sell their product nationwide, and are in the middle 
+                        of the pack in terms of market share. They are currently trying to boost their market share while maintaining profitability.
+                        There is a government welfare program called WIC (Women, Infants, Children) that allows individuals living below the poverty level to receive vouchers
+                        for infant formula for their children. Unlike most welfare programs, this one is subsidized by the actual producers of infant formula. On a state-by-state
+                        basis, infant formula producers bid for the right to be the sole supplier of infant formula to welfare recipients in that state.
+                        In addition to paying the government for the WIC contract, the client also provides rebates to retailers for WIC sales. As a result, income received from
+                        WIC sales is substantially less than that received from normal formula sales. In fact, sales to mothers that remain in the WIC program for more than 12
+                        months result in a net loss.
+                        In trying to determine how much to bid on a WIC contract for a given state, what factors should you consider?""",
             "follow_ups": [
-                "What clarifying questions would you ask?",
-                "What framework would you use to structure your analysis?",
-                "Suppose the market size is 10 million people and the average consumption is 20 liters per year. What is the total addressable market?",
-                "If the company expects to capture 5% market share in 3 years, what is the expected annual revenue at a price of $2 per liter?",
-                "What risks or barriers should the company consider before entering?",
-                "What is your final recommendation?"
+                """Sure. Obviously the typical WIC customer is poor, since this is a form of welfare. But some things you might not know are that 1) the
+                    average WIC recipient stays in the program for less than 12 months, 2) mothers typically remain loyal to a brand through infancy for their
+                    first child, but for subsequent children recipients often switch back and forth between brands, and 3) infants typically require formula the
+                    first 22 months of their life.""",
+                "For the purposes of this interview, let's assume that the rebates average an additional 10% (off of the retail price).",
+                "For the most part, your logic is correct. But is there anything else that might be a factor in determining profit?",
+                "Contracts typically last several years.",
+                """Good. I'm not going to make you go through the math on it, because we're about out of time, but you're right. There are 1.2 million WIC
+                    recipients in the state, and shelf-space is awarded based on volume sales. So for this company to get the contract, it can help them have
+                    more sales volume, and thus more shelf-space, and hopefully then more market share.""",
+                """Real world situation is that synergies are strong, and WIC recipients bounce in and out of program but stay loyal to product for first-borns. Not only are the
+                    synergies positive, but also on average WIC recipients are profitable because they pay retail for nearly half of the formula that they purchase over the first
+                    22 months of their child's life.""",
             ]
         },
         {
@@ -94,23 +107,30 @@ INTERVIEW_QUESTION_BANK = {
     "banking": [
         {
             "question": "What is the difference between retail banking and investment banking?",
-            "template_answer": "Retail banking provides services to individual consumers, such as savings accounts and loans, while investment banking focuses on services like underwriting, mergers and acquisitions, and raising capital for corporations."
+            "template_answer": """Retail banking provides services to individual consumers, such as
+             savings accounts and loans, while investment banking focuses on services like underwriting,
+              mergers and acquisitions, and raising capital for corporations."""
         },
         {
             "question": "Explain the concept of fractional reserve banking.",
-            "template_answer": "Fractional reserve banking is a system where banks keep a fraction of deposits as reserves and lend out the rest, allowing money creation through the lending process."
+            "template_answer": """Fractional reserve banking is a system where banks keep a fraction of deposits 
+            as reserves and lend out the rest, allowing money creation through the lending process."""
         },
         {
             "question": "What is Basel III and why is it important?",
-            "template_answer": "Basel III is a set of international banking regulations developed to strengthen regulation, supervision, and risk management within the banking sector, focusing on capital adequacy, stress testing, and market liquidity risk."
+            "template_answer": """Basel III is a set of international banking regulations developed to strengthen 
+            regulation, supervision, and risk management within the banking sector, focusing on capital adequacy, 
+            stress testing, and market liquidity risk."""
         },
         {
             "question": "How do banks manage credit risk?",
-            "template_answer": "Banks manage credit risk by assessing borrowers' creditworthiness, setting lending limits, requiring collateral, and diversifying their loan portfolios."
+            "template_answer": """Banks manage credit risk by assessing borrowers' creditworthiness, setting 
+            lending limits, requiring collateral, and diversifying their loan portfolios."""
         },
         {
             "question": "What is the role of the Federal Reserve?",
-            "template_answer": "The Federal Reserve is the central bank of the United States, responsible for setting monetary policy, regulating banks, maintaining financial stability, and providing financial services to the government and other banks."
+            "template_answer": """The Federal Reserve is the central bank of the United States, responsible for setting 
+            monetary policy, regulating banks, maintaining financial stability, and providing financial services to the government and other banks."""
         }
     ],
     "quantitative_finance": [
@@ -159,89 +179,203 @@ INTERVIEW_QUESTION_BANK = {
     ]
 }
 
-async def get_next_interview_question(industry, asked_questions, step=0):
+
+async def get_next_interview_question(industry, asked_questions):
     """
-    For software_engineering, return the main question and the list of hints.
-    For consulting, return the main case and follow-up prompts based on 'step'.
-    For banking, quantitative_finance, and behavioral, return the next unasked question.
-    'asked_questions' should be a list of dicts with 'main' or 'case' for multi-step, or 'question' for single-step.
+    Get the next unasked interview question for the specified industry.
+    
+    Args:
+        industry (str): The interview industry (e.g., 'software_engineering')
+        asked_questions (list): List of previously asked questions
+    
+    Returns:
+        dict: Next question data or None if no questions available
     """
-    questions = INTERVIEW_QUESTION_BANK.get(industry, [])
-    if industry == "software_engineering":
-        for q in questions:
-            key = "main"
-            if not any(a.get(key) == q[key] for a in asked_questions):
-                return {"question": q[key], "hints": q.get("hints", [])}
+    logger.info(f"Getting next question for industry={industry}, {len(asked_questions)} already asked")
+    
+    available_questions = INTERVIEW_QUESTION_BANK.get(industry, [])
+    if not available_questions:
         return {"question": None}
-    elif industry == "consulting":
-        for q in questions:
-            key = "case"
-            if not any(a.get(key) == q[key] for a in asked_questions):
-                # If step is 0, return the main/case question
-                if step == 0:
-                    return {"question": q[key], "follow_up": q["follow_ups"][0] if q["follow_ups"] else None, "step": 0}
-                # If step > 0, return the next follow-up
-                elif step < len(q["follow_ups"]):
-                    return {"question": q[key], "follow_up": q["follow_ups"][step], "step": step}
-                else:
-                    return {"question": None}  # All follow-ups done
-        return {"question": None}  # No more questions
-    else:
-        for q in questions:
-            if not any(a.get("question") == q["question"] for a in asked_questions):
-                return {"question": q["question"]}
-        return {"question": None}  # No more questions
+    
+    # Find unasked questions based on industry-specific key
+    unasked_questions = _filter_unasked_questions(available_questions, asked_questions, industry)
+    
+    if not unasked_questions:
+        return {"question": None}
+    
+    # Select random question from unasked ones
+    selected_question = random.choice(unasked_questions)
+    return _format_question_response(selected_question, industry)
+
+
+def _filter_unasked_questions(available_questions, asked_questions, industry):
+    """
+    Filter out questions that have already been asked.
+    
+    Args:
+        available_questions (list): All available questions for the industry
+        asked_questions (list): Previously asked questions
+        industry (str): The interview industry
+    
+    Returns:
+        list: Questions that haven't been asked yet
+    """
+    # Get the appropriate key for this industry
+    question_key = _get_question_key(industry)
+    
+    # Extract asked question texts
+    asked_texts = {q.get(question_key) for q in asked_questions if q.get(question_key)}
+    
+    # Filter out already asked questions
+    unasked = [q for q in available_questions if q.get(question_key) not in asked_texts]
+    return unasked
+
+
+def _get_question_key(industry):
+    """
+    Get the appropriate key for accessing questions in different industries.
+    
+    Args:
+        industry (str): The interview industry
+    
+    Returns:
+        str: The key to use for accessing questions
+    """
+    key_mapping = {
+        "software_engineering": "main",
+        "consulting": "case",
+        "default": "question"
+    }
+    return key_mapping.get(industry, key_mapping["default"])
+
+
+def _format_question_response(question_data, industry):
+    """
+    Format the question response based on industry requirements.
+    
+    Args:
+        question_data (dict): The selected question data
+        industry (str): The interview industry
+    
+    Returns:
+        dict: Formatted question response
+    """
+    question_key = _get_question_key(industry)
+    
+    response = {"question": question_data[question_key]}
+    
+    # Add industry-specific additional data
+    if industry == "software_engineering" and "hints" in question_data:
+        response["hints"] = question_data["hints"]
+    elif industry == "consulting" and "follow_ups" in question_data:
+        response["follow_ups"] = question_data["follow_ups"]
+    
+    return response
+
 
 async def get_template_answer(industry, question):
-    """Return the template answer for a given question and industry."""
-    questions = INTERVIEW_QUESTION_BANK.get(industry, [])
-    for q in questions:
-        if q["question"] == question:
+    """
+    Get the template answer for a specific question in the given industry.
+    
+    Args:
+        industry (str): The interview industry
+        question (str): The question text
+    
+    Returns:
+        str: Template answer or empty string if not found
+    """
+    available_questions = INTERVIEW_QUESTION_BANK.get(industry, [])
+    question_key = _get_question_key(industry)
+    
+    # Find the question and return its template answer
+    for q in available_questions:
+        if q.get(question_key) == question and "template_answer" in q:
             return q["template_answer"]
+    
     return ""
 
+
 async def rate_answer(user_answer, template_answer):
-    """Basic rule-based rating: returns a score and summary."""
-    if not user_answer or not template_answer:
-        return {"score": 0, "summary": "No answer provided."}
-    # Simple scoring: check for length and keyword overlap
-    score = 1
-    feedback = "Answer is too short. Try to elaborate more."
-    if len(user_answer.split()) > 20:
+    """
+    Rate a user's answer compared to the template answer.
+    
+    Args:
+        user_answer (str): User's response
+        template_answer (str): Expected/template answer
+    
+    Returns:
+        dict: Rating with score (1-5) and summary
+    """
+    if not user_answer or not user_answer.strip():
+        return {"score": 1, "summary": "No answer provided. Please try to answer the question."}
+    
+    if not template_answer:
+        return {"score": 3, "summary": "Answer received but no template available for comparison."}
+    
+    # Calculate score based on length and keyword overlap
+    user_words = user_answer.lower().split()
+    template_words = template_answer.lower().split()
+    
+    # Base score
+    score = 2
+    
+    # Length factor (reasonable length gets bonus)
+    if len(user_words) >= 15:
         score += 1
-    if any(word in user_answer.lower() for word in template_answer.lower().split()[:5]):
+    
+    # Keyword overlap factor
+    template_keywords = set(template_words[:10])  # First 10 words are usually key concepts
+    user_keywords = set(user_words)
+    overlap_ratio = len(template_keywords & user_keywords) / len(template_keywords) if template_keywords else 0
+    
+    if overlap_ratio >= 0.3:  # 30% overlap
         score += 1
-    if score == 3:
-        feedback = "Good answer! You covered the main points."
-    elif score == 2:
-        feedback = "Decent answer, but could use more detail or relevance."
-    return {"score": score, "summary": feedback}
+    if overlap_ratio >= 0.5:  # 50% overlap
+        score += 1
+    
+    # Generate summary based on score
+    summaries = {
+        1: "Answer is too short or off-topic. Try to elaborate more.",
+        2: "Basic answer provided. Could use more detail and relevance.",
+        3: "Decent answer with some good points. Consider adding more depth.",
+        4: "Good answer! You covered most key points effectively.",
+        5: "Excellent answer! Comprehensive and well-structured."
+    }
+    
+    return {"score": min(score, 5), "summary": summaries.get(score, summaries[3])}
+
 
 async def get_feedback(user_answer, template_answer):
-    """Provide concise, actionable feedback based on the answer and template."""
-    if not user_answer:
-        return "Please try to answer the question so I can give you feedback."
+    """
+    Provide specific, actionable feedback on the user's answer.
+    
+    Args:
+        user_answer (str): User's response
+        template_answer (str): Expected/template answer
+    
+    Returns:
+        str: Constructive feedback message
+    """
+    if not user_answer or not user_answer.strip():
+        return "Please provide an answer so I can give you specific feedback."
+    
     if not template_answer:
-        return "No template answer available for this question."
-
-    short = len(user_answer.split()) < 15
-    template_keywords = set(template_answer.lower().split())
-    user_keywords = set(user_answer.lower().split())
-    overlap = template_keywords & user_keywords
-
-    if short:
-        return "Try to give a more detailed answer with a specific example."
-    if overlap:
-        return f"Good start. You mentioned: {', '.join(list(overlap)[:2])}. Focus on being clear and direct."
-    return "Address the main points of the question more directly and keep your answer focused."
-
-# Sample data for use in the client
-MOCK_DATA = {
-    "sample_data": [
-        {"industry": "software_engineering", "question": "Given an array of integers, return the indices of the two numbers that add up to a specific target."},
-        {"industry": "consulting", "case": "A beverage company wants to enter a new market. How would you approach this case?"},
-        {"industry": "banking", "question": "What is the difference between retail banking and investment banking?"},
-        {"industry": "quantitative_finance", "question": "What is the Black-Scholes model used for?"},
-        {"industry": "behavioral", "question": "Can you tell me about yourself?"}
-    ]
-}
+        return "I can see you provided an answer. Try to be more specific and structured in your response."
+    
+    user_words = user_answer.lower().split()
+    template_words = template_answer.lower().split()
+    
+    # Check answer length
+    if len(user_words) < 10:
+        return "Your answer is quite brief. Try to provide more detail and explanation to fully address the question."
+    
+    # Check for keyword overlap
+    template_keywords = set(template_words[:10])
+    user_keywords = set(user_words)
+    common_keywords = template_keywords & user_keywords
+    
+    if common_keywords:
+        key_terms = ", ".join(list(common_keywords)[:3])
+        return f"Good start! You mentioned key terms like '{key_terms}'. Consider expanding on these concepts with more detail and examples."
+    else:
+        return "Your answer covers some points, but try to focus more directly on the core concepts the question is asking about."

@@ -1,4 +1,4 @@
-from flask import Flask, render_template, jsonify
+from flask import Flask, render_template, jsonify, session, request
 from flask_socketio import SocketIO
 import pyaudio
 import asyncio
@@ -15,12 +15,16 @@ from datetime import datetime
 from common.agent_functions import FUNCTION_MAP
 from common.agent_templates import AgentTemplates
 import logging
-from common.business_logic import MOCK_DATA
+
 from common.log_formatter import CustomFormatter
+from flask import copy_current_request_context
+import subprocess
+import collections
 
 
 # Configure Flask and SocketIO
 app = Flask(__name__, static_folder="./static", static_url_path="/")
+app.secret_key = os.environ.get("FLASK_SECRET_KEY", "dev_secret_key")
 socketio = SocketIO(app)
 
 # Configure logging
@@ -34,6 +38,9 @@ logger.addHandler(console_handler)
 
 # Remove any existing handlers from the root logger to avoid duplicate messages
 logging.getLogger().handlers = []
+
+# Store the latest code for the current session (single user for now)
+current_code = ""
 
 
 class VoiceAgent:
@@ -53,6 +60,8 @@ class VoiceAgent:
         self.input_device_id = None
         self.output_device_id = None
         self.agent_templates = AgentTemplates(industry, voiceModel, voiceName)
+        self.log_buffer = collections.deque()
+        self.awaiting_audio_done = False
 
     def set_loop(self, loop):
         self.loop = loop
@@ -174,11 +183,24 @@ class VoiceAgent:
             last_user_message = None
             last_function_response_time = None
             in_function_chain = False
-
             with self.speaker:
                 async for message in self.ws:
                     if isinstance(message, str):
-                        logger.info(f"Server: {message}")
+                        log_this = False
+                        if message.startswith("Server: "):
+                            try:
+                                json_part = message[message.find("{") : message.rfind("}") + 1]
+                                data = json.loads(json_part)
+                                if (
+                                    (data.get("type") == "ConversationText" and data.get("role") == "assistant")
+                                    or data.get("type") == "AgentAudioDone"
+                                ):
+                                    self.log_buffer.append(message)
+                                    log_this = True
+                                    if data.get("type") == "AgentAudioDone":
+                                        self.awaiting_audio_done = True
+                            except Exception:
+                                pass
                         message_json = json.loads(message)
                         message_type = message_json.get("type")
                         current_time = time.time()
@@ -217,6 +239,13 @@ class VoiceAgent:
                             function_name = functions[0].get("name")
                             function_call_id = functions[0].get("id")
                             parameters = json.loads(functions[0].get("arguments", {}))
+
+                            # Force the industry to be the one this agent was configured with.
+                            if function_name == "get_next_interview_question":
+                                parameters["industry"] = self.agent_templates.industry
+                                logger.info(
+                                    f"Overriding/setting industry for get_next_interview_question to: {parameters['industry']}"
+                                )
 
                             logger.info(f"Function call received: {function_name}")
                             logger.info(f"Parameters: {parameters}")
@@ -334,6 +363,14 @@ class VoiceAgent:
 
                     elif isinstance(message, bytes):
                         await self.speaker.play(message)
+                    # After all messages, check if we just got AgentAudioDone and flush
+                    if getattr(self, "awaiting_audio_done", False):
+                        while self.speaker._queue and not self.speaker._queue.sync_q.empty():
+                            await asyncio.sleep(0.01)
+                        await asyncio.sleep(0.2)  # Artificial delay for testing
+                        while self.log_buffer:
+                            logger.info(self.log_buffer.popleft())
+                        self.awaiting_audio_done = False
 
         except Exception as e:
             logger.error(f"Error in receiver: {e}")
@@ -496,8 +533,14 @@ def get_audio_devices():
 # Flask routes
 @app.route("/")
 def index():
-    # Get the sample data from MOCK_DATA
-    sample_data = MOCK_DATA.get("sample_data", [])
+    # Sample data for the frontend
+    sample_data = [
+        {"industry": "software_engineering", "question": "Given an array of integers, return the indices of the two numbers that add up to a specific target."},
+        {"industry": "consulting", "case": "A beverage company wants to enter a new market. How would you approach this case?"},
+        {"industry": "banking", "question": "What is the difference between retail banking and investment banking?"},
+        {"industry": "quantitative_finance", "question": "What is the Black-Scholes model used for?"},
+        {"industry": "behavioral", "question": "Can you tell me about yourself?"}
+    ]
     return render_template("index.html", sample_data=sample_data)
 
 
@@ -617,8 +660,8 @@ def handle_start_voice_agent(data=None):
     global voice_agent
     logger.info(f"Starting voice agent with data: {data}")
     if voice_agent is None:
-        # Get industry from data or default to tech_support
-        industry = data.get("industry", "tech_support") if data else "tech_support"
+        # Get industry from data or default to behavioral
+        industry = data.get("industry", "behavioral") if data else "behavioral"
         voiceModel = (
             data.get("voiceModel", "aura-2-thalia-en") if data else "aura-2-thalia-en"
         )
@@ -649,6 +692,76 @@ def handle_stop_voice_agent():
             except Exception as e:
                 logger.error(f"Error stopping voice agent: {e}")
         voice_agent = None
+
+
+# Store session data for the current user (single user for now)
+def get_user_session():
+    if 'user_data' not in session:
+        session['user_data'] = {
+            'current_code': '',
+            'current_question': '',
+            'transcript': ''
+        }
+    return session['user_data']
+
+
+@socketio.on("code_update")
+def handle_code_update(data):
+    user_data = get_user_session()
+    user_data['current_code'] = data.get("code", "")
+    session.modified = True
+
+
+@socketio.on("request_hint")
+def handle_request_hint(data):
+    user_data = get_user_session()
+    from common.agent_functions import get_software_engineering_hint
+    import asyncio
+    question = user_data.get('current_question', '')
+    user_answer = user_data.get('transcript', '')
+    code = user_data.get('current_code', '')
+    params = {"user_answer": user_answer + "\n" + code, "question": question}
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    result = loop.run_until_complete(get_software_engineering_hint(params))
+    socketio.emit("hint_response", result)
+
+
+# Example: update transcript (user's spoken thoughts)
+@socketio.on("transcript_update")
+def handle_transcript_update(data):
+    user_data = get_user_session()
+    user_data['transcript'] = data.get('transcript', '')
+    session.modified = True
+
+
+# Example: set current question when a new one is asked
+@socketio.on("set_current_question")
+def handle_set_current_question(data):
+    user_data = get_user_session()
+    user_data['current_question'] = data.get('question', '')
+    session.modified = True
+
+
+@socketio.on("run_code")
+def handle_run_code(data):
+    code = data.get("code", "")
+    try:
+        # Run the code in a subprocess with a timeout and capture output
+        result = subprocess.run(
+            [sys.executable, "-c", code],
+            capture_output=True,
+            text=True,
+            timeout=5
+        )
+        output = result.stdout
+        if result.stderr:
+            output += ("\n" if output else "") + result.stderr
+        if not output.strip():
+            output = "(No output)"
+    except Exception as e:
+        output = f"Error running code: {e}"
+    socketio.emit("code_output", {"output": output})
 
 
 if __name__ == "__main__":

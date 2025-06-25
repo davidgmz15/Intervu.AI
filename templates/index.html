@@ -41,15 +41,25 @@
             </div>
         </div>
         <div class="columns-container">
-            <div id="conversation" class="timeline column">
+            <div id="conversation" class="timeline column" style="width: 600px; min-width: 400px; max-width: 700px;">
                 <h2>Interview Conversation</h2>
                 <div id="conversationMessages" class="syncscroll" name="timeline"></div>
             </div>
-            <div class="vertical-resizer" id="verticalResizer"></div>
-            <div id="logs" class="timeline column">
+            <div id="logs" class="timeline column" style="width: 500px; min-width: 350px; max-width: 600px;">
                 <h2>System Logs</h2>
                 <div id="logMessages" class="syncscroll" name="timeline"></div>
             </div>
+        </div>
+        <!-- Coding Editor Section -->
+        <div class="editor-section" id="editorSection" style="display: none;">
+            <h2>Code Editor</h2>
+            <div id="codeEditor" style="height: 450px; width: 100%; max-width: 1000px; border: 1px solid #ccc; border-radius: 8px;"></div>
+            <div class="editor-btn-row">
+                <button id="requestHintBtn" class="mic-button">Request Hint</button>
+                <button id="runCodeBtn" class="mic-button" style="background: linear-gradient(90deg, #4ae24a 0%, #2e8b57 100%);">Run Code</button>
+            </div>
+            <div id="hintBox" class="hint-box" style="margin-top: 18px; display: none;"></div>
+            <div id="outputBox" class="output-box" style="margin-top: 18px; display: none;"></div>
         </div>
     </div>
 
@@ -64,6 +74,7 @@
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.44.0/min/vs/loader.js"></script>
     <script>
         const socket = io();
         const startButton = document.getElementById('startButton');
@@ -89,6 +100,16 @@
         let currentIndustryName = 'Behavioral'; // Default industry name
         let currentVoiceModel = 'aura-2-thalia-en'; // Default voice model
         let currentVoiceName = ''; // Will be populated from the model name
+        let stuckTimeout = null;
+        let hasRequestedHint = false;
+        const STUCK_TIME_MS = 60000; // 60 seconds
+        const stuckPrompt = document.createElement('div');
+        stuckPrompt.className = 'hint-box';
+        stuckPrompt.style.background = '#ffeaea';
+        stuckPrompt.style.color = '#a94442';
+        stuckPrompt.style.display = 'none';
+        stuckPrompt.textContent = "It looks like you've been thinking for a while. Would you like a hint?";
+        document.querySelector('.editor-section').appendChild(stuckPrompt);
 
         // Populate audio devices
         async function loadAudioDevices() {
@@ -285,6 +306,7 @@
                     content: `Industry changed to ${name}. Click Start Interview to continue.`
                 });
             }
+            updateEditorVisibility();
         }
         
         // Show industry popup
@@ -385,6 +407,12 @@
         }
 
         socket.on('conversation_update', (data) => {
+            if (data && data.type === 'ConversationText' && data.role === 'assistant' && data.content) {
+                // Heuristic: if the message looks like a question, set it
+                if (data.content.endsWith('?')) {
+                    socket.emit('set_current_question', { question: data.content });
+                }
+            }
             const timestamp = data.timestamp || new Date().toISOString();
             const currentCounter = messageCounter++;
             messageOrder.push({ id: currentCounter, timestamp: timestamp, type: 'conversation' });
@@ -613,35 +641,110 @@
             }
         });
 
-        // Add resizable columns logic
-        const resizer = document.getElementById('verticalResizer');
-        const leftCol = document.getElementById('conversation');
-        const rightCol = document.getElementById('logs');
-        let isResizing = false;
+        // Show/hide code editor based on industry and adjust column widths
+        function updateEditorVisibility() {
+            const editorSection = document.getElementById('editorSection');
+            const convCol = document.getElementById('conversation');
+            const logsCol = document.getElementById('logs');
+            if (currentIndustry === 'software_engineering') {
+                editorSection.style.display = '';
+                editorSection.style.width = '100%';
+                editorSection.style.maxWidth = '700px';
+                editorSection.style.margin = '0 auto';
+                if (convCol) convCol.style.width = '250px';
+                if (logsCol) logsCol.style.width = '250px';
+                const codeEditorDiv = document.getElementById('codeEditor');
+                if (codeEditorDiv) codeEditorDiv.style.width = '100%';
+                if (window.editor && window.monaco) {
+                    setTimeout(() => window.editor.layout(), 100);
+                }
+            } else {
+                editorSection.style.display = 'none';
+                editorSection.style.width = '';
+                editorSection.style.maxWidth = '';
+                editorSection.style.margin = '';
+                if (convCol) convCol.style.width = '600px';
+                if (logsCol) logsCol.style.width = '500px';
+            }
+        }
+        // Call on page load and whenever industry changes
+        updateEditorVisibility();
 
-        resizer.addEventListener('mousedown', function(e) {
-            isResizing = true;
-            document.body.style.cursor = 'col-resize';
+        // Monaco Editor Integration
+        require.config({ paths: { 'vs': 'https://cdn.jsdelivr.net/npm/monaco-editor@0.44.0/min/vs' } });
+        require(['vs/editor/editor.main'], function () {
+            window.editor = monaco.editor.create(document.getElementById('codeEditor'), {
+                value: '',
+                language: 'python',
+                theme: 'vs-dark',
+                fontSize: 16,
+                minimap: { enabled: false },
+                automaticLayout: true
+            });
+            window.monaco = monaco;
+            editor.onDidChangeModelContent(() => {
+                const code = editor.getValue();
+                socket.emit('code_update', { code });
+                onCodeChange();
+            });
         });
-        document.addEventListener('mousemove', function(e) {
-            if (!isResizing) return;
-            const container = document.querySelector('.columns-container');
-            const containerRect = container.getBoundingClientRect();
-            let newLeftWidth = e.clientX - containerRect.left;
-            let minLeft = 200;
-            let minRight = 200;
-            let maxLeft = containerRect.width - minRight;
-            if (newLeftWidth < minLeft) newLeftWidth = minLeft;
-            if (newLeftWidth > maxLeft) newLeftWidth = maxLeft;
-            leftCol.style.flex = 'none';
-            rightCol.style.flex = 'none';
-            leftCol.style.width = newLeftWidth + 'px';
-            rightCol.style.width = (containerRect.width - newLeftWidth - resizer.offsetWidth) + 'px';
+        // Request Hint Button
+        document.getElementById('requestHintBtn').addEventListener('click', function() {
+            const code = editor ? editor.getValue() : '';
+            socket.emit('request_hint', { code });
+            hasRequestedHint = true;
+            stuckPrompt.style.display = 'none';
         });
-        document.addEventListener('mouseup', function(e) {
-            if (isResizing) {
-                isResizing = false;
-                document.body.style.cursor = '';
+
+        socket.on('hint_response', function(data) {
+            const hintBox = document.getElementById('hintBox');
+            if (data && data.hint) {
+                hintBox.textContent = data.hint;
+                hintBox.style.display = 'block';
+            } else {
+                hintBox.textContent = 'No hint available.';
+                hintBox.style.display = 'block';
+            }
+        });
+
+        // Placeholder: emit transcript_update as the user speaks (integrate with STT later)
+        // Example: socket.emit('transcript_update', { transcript: liveTranscript });
+
+        function resetStuckTimer() {
+            if (stuckTimeout) clearTimeout(stuckTimeout);
+            stuckPrompt.style.display = 'none';
+            hasRequestedHint = false;
+            stuckTimeout = setTimeout(() => {
+                if (!hasRequestedHint) {
+                    stuckPrompt.style.display = 'block';
+                }
+            }, STUCK_TIME_MS);
+        }
+
+        // Reset timer on page load
+        resetStuckTimer();
+
+        document.getElementById('runCodeBtn').addEventListener('click', function() {
+            const code = editor ? editor.getValue() : '';
+            socket.emit('run_code', { code });
+        });
+        socket.on('code_output', function(data) {
+            const outputBox = document.getElementById('outputBox');
+            if (data && data.output !== undefined) {
+                outputBox.textContent = data.output;
+                outputBox.style.display = 'block';
+            } else {
+                outputBox.textContent = 'No output.';
+                outputBox.style.display = 'block';
+            }
+        });
+
+        // Instead, set editorSection width to match conversation column on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const convCol = document.getElementById('conversation');
+            const editorSection = document.getElementById('editorSection');
+            if (convCol && editorSection) {
+                editorSection.style.width = convCol.offsetWidth + 'px';
             }
         });
     </script>
