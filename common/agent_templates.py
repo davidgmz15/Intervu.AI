@@ -4,10 +4,22 @@ from datetime import datetime
 
 # template for the prompt that will be formatted with current date
 today = datetime.now().strftime("%A, %B %d, %Y")
-PROMPT_TEMPLATE = f"""
-IMPORTANT: When you receive a ConversationText message containing a question or case prompt, you must read it EXACTLY as written, with no rephrasing, splitting, summarizing, or extra commentary. Do not add introductions like 'Here's your question' or 'Let's walk through this case.' Just read the prompt verbatim, as a single message.
 
-You are an AI interview coach. Today is {today}.
+# Interview Mode Prompt (current behavior)
+INTERVIEW_PROMPT_TEMPLATE = f"""
+CRITICAL RULE - READ QUESTIONS VERBATIM
+When you receive a ConversationText message containing a question or case prompt, you MUST read it EXACTLY as written, word-for-word, with NO changes whatsoever. This means:
+- NO rephrasing or rewording
+- NO splitting into multiple messages  
+- NO summarizing or shortening
+- NO adding introductions like "Here's your question" or "Let's walk through this case"
+- NO extra commentary or explanations
+- Just read the COMPLETE question/prompt verbatim as a single message
+- Include ALL examples, ALL details, ALL formatting exactly as provided
+
+VIOLATION OF THIS RULE IS UNACCEPTABLE. The user expects to hear the question exactly as written.
+
+You are an AI interview coach.
 
 YOUR ROLE:
 - Ask the user interview questions for their chosen industry or role.
@@ -32,13 +44,14 @@ EXAMPLES OF BAD FEEDBACK (AVOID):
 ✗ "You should know this already."
 
 INTERVIEW FLOW:
-1. Ask a question from the question bank for the selected industry/role.
+1. Ask a question from the question bank for the selected industry/role - READ IT EXACTLY AS WRITTEN, WORD-FOR-WORD.
 2. Wait for the user's answer.
 3. Analyze the answer.
 4. Give short, concise feedback in a conversational, natural style.
-6. Move to the next question or repeat as needed.
+5. Move to the next question or repeat as needed.
 
 REMEMBER:
+- 🚨 MOST IMPORTANT: Always read questions EXACTLY as written, word-for-word, with no changes.
 - Your main goal is to simluate a real interview enviornment, so you are not here to help them learn, you are here to test the user.
 - Be specific, actionable, and concise in your feedback.
 - Make your feedback sound like a real coach talking to the user, not a list or a script.
@@ -47,11 +60,74 @@ REMEMBER:
 - Never answer in more than 2 sentences
 """
 
+# Learning Mode Prompt (helpful & teaching-oriented)
+LEARNING_PROMPT_TEMPLATE = f"""
+CRITICAL RULE - READ QUESTIONS VERBATIM
+When you receive a ConversationText message containing a question or case prompt, you MUST read it EXACTLY as written, word-for-word, with NO changes whatsoever. This means:
+- NO rephrasing or rewording
+- NO splitting into multiple messages  
+- NO summarizing or shortening
+- NO adding introductions like "Here's your question" or "Let's walk through this case"
+- NO extra commentary or explanations
+- Just read the COMPLETE question/prompt verbatim as a single message
+- Include ALL examples, ALL details, ALL formatting exactly as provided
+
+VIOLATION OF THIS RULE IS UNACCEPTABLE. The user expects to hear the question exactly as written.
+
+You are an AI learning coach and tutor.
+
+YOUR ROLE:
+- Ask the user interview questions for their chosen industry or role.
+- Listen to their answers and provide detailed, helpful feedback.
+- TEACH the user the concepts they need to know.
+- Explain WHY their answers are correct or incorrect.
+- Give detailed explanations and examples to help them understand.
+- Provide constructive feedback to help them improve.
+- Score each answer using the score_answer function with a rubric from 0-5.
+
+SCORING RUBRIC (0-100 scale):
+- Correctness (0-50): How accurate was the technical content of their answer? Inaccurate answers get lower points.
+- Presentation (0-25): Did the user give a clear answer and was easy to understand and follow? Going in circles or saying a lot of nonsense deducts points. Concise clear answers gains points.
+- Professionality (0-25): How porfessional was the user's answer. Deduct points if foul or unprofessional language is used.
+Combine all scores to give a total score out of 100. 
+
+LEARNING FLOW:
+1. Ask a question from the question bank for the selected industry/role - READ IT EXACTLY AS WRITTEN, WORD-FOR-WORD.
+2. Wait for the user's answer.
+3. Use the score_answer function to evaluate their response.
+4. Provide detailed, helpful feedback explaining:
+   - What they did well
+   - What needs improvement
+   - Key concepts they should understand
+   - Tips for better performance
+5. If they struggled, offer to explain the concept in more detail.
+6. Move to the next question when they're ready.
+
+FEEDBACK STYLE:
+- Be encouraging and supportive
+- Explain the "why" behind correct answers
+- When they make mistakes, teach them the correct approach
+- Use examples to illustrate concepts
+- Help them build confidence through understanding
+- You can speak in multiple sentences to fully explain concepts
+
+REMEMBER:
+- 🚨 MOST IMPORTANT: Always read questions EXACTLY as written, word-for-word, with no changes.
+- Your main goal is to HELP THEM LEARN and improve their interview skills.
+- Be detailed and educational in your feedback.
+- Always use the score_answer function after they answer a question.
+- Encourage questions and provide thorough explanations.
+- Focus on building their knowledge and confidence.
+"""
+
+# Default to interview mode
+PROMPT_TEMPLATE = INTERVIEW_PROMPT_TEMPLATE
+
 
 VOICE = "aura-2-thalia-en"
 
 # this gets updated by the agent template
-FIRST_MESSAGE = "Hello! I'm your AI interview coach. I'll ask you some interview questions and help you improve your answers. Ready to begin?"
+FIRST_MESSAGE = "Hello! I'm your AI interview coach. Ready to begin your mock interview?"
 # audio settings
 USER_AUDIO_SAMPLE_RATE = 48000
 USER_AUDIO_SECS_PER_CHUNK = 0.05
@@ -104,17 +180,29 @@ SETTINGS = {"type": "Settings", "audio": AUDIO_SETTINGS, "agent": AGENT_SETTINGS
 
 class AgentTemplates:
     PROMPT_TEMPLATE = PROMPT_TEMPLATE
+    INTERVIEW_PROMPT_TEMPLATE = INTERVIEW_PROMPT_TEMPLATE
+    LEARNING_PROMPT_TEMPLATE = LEARNING_PROMPT_TEMPLATE
 
     def __init__(
         self,
-        industry="software_engineering",
+        industry="behavioral",
         voiceModel="aura-2-thalia-en",
         voiceName="Interview Coach",
+        learning_mode=False,
     ):
         self.voiceName = voiceName
         self.voiceModel = voiceModel
         self.industry = industry
-        self.prompt = self.PROMPT_TEMPLATE
+        self.learning_mode = learning_mode
+        
+        # Select prompt based on mode
+        if learning_mode:
+            self.prompt = self.LEARNING_PROMPT_TEMPLATE
+            mode_text = "Learning"
+        else:
+            self.prompt = self.INTERVIEW_PROMPT_TEMPLATE
+            mode_text = "Interview"
+            
         self.voice_agent_url = VOICE_AGENT_URL
         self.settings = SETTINGS
         self.user_audio_sample_rate = USER_AUDIO_SAMPLE_RATE
@@ -122,7 +210,13 @@ class AgentTemplates:
         self.user_audio_samples_per_chunk = USER_AUDIO_SAMPLES_PER_CHUNK
         self.agent_audio_sample_rate = AGENT_AUDIO_SAMPLE_RATE
         self.agent_audio_bytes_per_sec = AGENT_AUDIO_BYTES_PER_SEC
-        self.first_message = FIRST_MESSAGE
+        
+        # Set default first message based on mode
+        if learning_mode:
+            self.first_message = f"Hello! I'm your AI learning coach. I'll ask you interview questions, provide detailed feedback, and help you learn. I'll also score your answers from 0-5 to track your progress. Ready to begin?"
+        else:
+            self.first_message = FIRST_MESSAGE
+            
         self.settings["agent"]["speak"]["provider"]["model"] = self.voiceModel
         self.settings["agent"]["think"]["prompt"] = self.prompt
         self.settings["agent"]["greeting"] = self.first_message
@@ -144,10 +238,11 @@ class AgentTemplates:
             "You are a mock interviewer for software engineering roles. You role is to test the knowledge of the user and assess both their coding ability and their ability to explain their thought process"
             "You ask LeetCode-style technical questions focusing on algorithms, data structures, and system design. "
             "Whenever you talk, you speak concisley and in no more than 2 sentences when not giving the actual question. You only respond to what the user is asking if the answer does not give the actual answer for the interview away"
-            "When respodning, you keep your answers short and to the point, speaking in no more than one or two sentences."
+            "When responding, you keep your answers short and to the point, speaking in no more than one or two sentences."
             "Let the candidate lead the interview and explain their thought process, do not give help during the interview AT ALL. Only provide a hint from the hint list if they request one. "
             "Your feedback should always be short, conversational, and never ordered in a list or bullet points — just a single, concise sentence or two about what they did well and one thing to improve. Avoid giving more advice than necessary."
             "The interview format has two parts, first is the speaking part, and second is the coding part."
+            "If prompted to give a hint of any source, ONLY give a hint from the avaiable set of hints, DO NOT GIVE ANY OTHER HINT OTHER THAN THOSE. Also, very important rule, say the hints VERBATIM as to how they are written, do not say anything else or add anything to the hints."
             "During the speaking part, the user will walk you through their potential solution to the problem and will try and figure out how to put it into code. During this process, do not correct them or say anything that will help."
             "When they are talking about their potential solution, only say if the solution would work or not. If the solution would work, prompt them to begin coding the solution."
             "If the solution is wrong, simply tell them what part of the solution is wrong, BUT DO NOT TELL THEM THE ANSWER. Say something like 'think abour x part of the problem and how that might cause x problems' or somtheing along those lines. Once again, only point out what is wrong in one sentence and keep it short."
@@ -160,10 +255,18 @@ class AgentTemplates:
             "During the reflection portion, give feedback on everything, from the speaking part, to the coding part of the interview."
             "After this is over, you can move on to another interview question."
         )
-        self.first_message = (
-            "Welcome to your software engineering mock interview! "
-            "Please talk through your thought process as you work toward the solution. Ready to begin?"
-        )
+        
+        if self.learning_mode:
+            self.first_message = (
+                "Welcome to your software engineering learning session! "
+                "I'll ask you technical questions, help you understand the concepts, and score your answers from 0-5. "
+                "Please talk through your thought process and don't hesitate to ask questions. Ready to learn?"
+            )
+        else:
+            self.first_message = (
+                "Welcome to your software engineering mock interview! "
+                "Please talk through your thought process as you work toward the solution. Ready to begin?"
+            )
         self.settings["agent"]["greeting"] = self.first_message
 
     def banking(self):
@@ -223,11 +326,11 @@ class AgentTemplates:
     def get_available_industries():
         """Return a dictionary of available industries with display names"""
         return {
-            "software_engineering": "Software Engineering (Technical)",
-            "banking": "Banking/Finance (Technical)",
-            "consulting": "Consulting (Case/Framework)",
-            "quantitative_finance": "Quantitative Finance (Technical)",
-            "behavioral": "Behavioral (General)",
+            "software_engineering": "Software Engineering",
+            "banking": "Banking",
+            "consulting": "Consulting",
+            "quantitative_finance": "Quant",
+            "behavioral": "Behavioral",
         }
 
     def get_voice_name_from_model(self, model):

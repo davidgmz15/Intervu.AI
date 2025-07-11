@@ -49,6 +49,8 @@ class VoiceAgent:
         industry="software_engineering",
         voiceModel="aura-2-thalia-en",
         voiceName="",
+        learning_mode=False,
+        difficulty=None,
     ):
         self.mic_audio_queue = asyncio.Queue()
         self.speaker = None
@@ -59,9 +61,15 @@ class VoiceAgent:
         self.stream = None
         self.input_device_id = None
         self.output_device_id = None
-        self.agent_templates = AgentTemplates(industry, voiceModel, voiceName)
+        self.learning_mode = learning_mode
+        self.difficulty = difficulty
+        self.agent_templates = AgentTemplates(industry, voiceModel, voiceName, learning_mode)
         self.log_buffer = collections.deque()
         self.awaiting_audio_done = False
+        
+        # Push-to-talk state
+        self.headphones_mode = True
+        self.push_to_talk_active = False
 
     def set_loop(self, loop):
         self.loop = loop
@@ -173,9 +181,17 @@ class VoiceAgent:
             while self.is_running:
                 data = await self.mic_audio_queue.get()
                 if self.ws and data:
-                    await self.ws.send(data)
+                    # Only send audio if in headphones mode OR push-to-talk is active
+                    if self.headphones_mode or self.push_to_talk_active:
+                        await self.ws.send(data)
         except Exception as e:
             logger.error(f"Error in sender: {e}")
+    
+    def set_push_to_talk_mode(self, headphones_mode, push_to_talk_active):
+        """Update push-to-talk state"""
+        self.headphones_mode = headphones_mode
+        self.push_to_talk_active = push_to_talk_active
+        logger.info(f"Push-to-talk mode updated: headphones={headphones_mode}, ptt_active={push_to_talk_active}")
 
     async def receiver(self):
         try:
@@ -243,8 +259,11 @@ class VoiceAgent:
                             # Force the industry to be the one this agent was configured with.
                             if function_name == "get_next_interview_question":
                                 parameters["industry"] = self.agent_templates.industry
+                                # Only add difficulty for software engineering
+                                if self.difficulty and self.agent_templates.industry == "software_engineering":
+                                    parameters["difficulty"] = self.difficulty
                                 logger.info(
-                                    f"Overriding/setting industry for get_next_interview_question to: {parameters['industry']}"
+                                    f"Overriding/setting industry for get_next_interview_question to: {parameters['industry']}, difficulty: {self.difficulty if self.agent_templates.industry == 'software_engineering' else 'N/A (not software engineering)'}"
                                 )
 
                             logger.info(f"Function call received: {function_name}")
@@ -325,6 +344,12 @@ class VoiceAgent:
                                 logger.info(
                                     f"Function Execution Latency: {execution_time:.3f}s"
                                 )
+
+                                # Special handling for score_answer function in learning mode
+                                if function_name == "score_answer" and self.learning_mode:
+                                    # Emit score event to frontend for display
+                                    socketio.emit("answer_score", result)
+                                    logger.info(f"Score event emitted: {result}")
 
                                 # Send the response back
                                 response = {
@@ -667,10 +692,17 @@ def handle_start_voice_agent(data=None):
         )
         # Get voice name from data or default to empty string, which uses the Model's voice name in the backend
         voiceName = data.get("voiceName", "") if data else ""
+        # Get learning mode from data or default to False (interview mode)
+        learning_mode = data.get("learningMode", False) if data else False
+        # Get difficulty from data or default to None (all levels)
+        difficulty = data.get("difficulty") if data else None
+        
         voice_agent = VoiceAgent(
             industry=industry,
             voiceModel=voiceModel,
             voiceName=voiceName,
+            learning_mode=learning_mode,
+            difficulty=difficulty,
         )
         if data:
             voice_agent.input_device_id = data.get("inputDeviceId")
@@ -762,6 +794,16 @@ def handle_run_code(data):
     except Exception as e:
         output = f"Error running code: {e}"
     socketio.emit("code_output", {"output": output})
+
+
+@socketio.on("toggle_push_to_talk_mode")
+def handle_toggle_push_to_talk_mode(data):
+    """Handle push-to-talk mode changes from frontend"""
+    global voice_agent
+    if voice_agent:
+        headphones_mode = data.get("headphonesMode", True)
+        push_to_talk_active = data.get("isPushToTalkActive", False)
+        voice_agent.set_push_to_talk_mode(headphones_mode, push_to_talk_active)
 
 
 if __name__ == "__main__":

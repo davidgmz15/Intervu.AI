@@ -3,63 +3,82 @@
 <head>
     <meta charset="utf-8">
     <title>AI Interview Assistant</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
     <script src="{{ url_for('static', filename='syncscroll.js') }}"></script>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
-<body>
-    <div class="main-container">
-        <div class="sidebar">
-            <header class="app-header">
-                <span class="app-title">AI Interview Assistant</span>
-            </header>
-            <div class="sidebar-content">
-                <button id="startButton" class="mic-button">Start Interview</button>
-                <div id="currentIndustryDisplay" class="current-industry">Industry: <span>Behavioral</span></div>
-                <button id="industryButton" class="industry-button">Change Industry</button>
-                <div id="status" class="status">Microphone: Not active</div>
-                <div class="audio-controls">
-                    <div class="device-select">
-                        <label for="voiceModel">Voice Model:</label>
-                        <select id="voiceModel"></select>
-                    </div>
-                    <div class="device-select">
-                        <label for="inputDevice">Input Device:</label>
-                        <select id="inputDevice"></select>
-                    </div>
-                </div>
-                <div class="controls">
-                    <label class="toggle">
-                        <input type="checkbox" id="showLogs" checked>
-                        <span class="toggle-label">Show Logs</span>
-                    </label>
-                    <label class="toggle">
-                        <input type="checkbox" id="darkMode" checked>
-                        <span class="toggle-label">Dark Mode</span>
-                    </label>
-                </div>
-            </div>
+<body class="dark-mode">
+    <!-- Header -->
+    <header class="app-header">
+        <span class="app-title">Intervu.AI</span>
+    </header>
+    
+    <!-- Control Panel -->
+    <div class="top-controls">
+        <!-- Main Controls -->
+        <button id="startButton" class="mic-button">Start Interview</button>
+        <button id="industryButton" class="industry-button">Change Industry</button>
+
+        <!-- Toggle Controls -->
+        <div class="controls">
+            <button id="learningModeBtn" class="toggle-button" data-mode="interview">Interview Mode</button>
         </div>
+
+        <div id="currentIndustryDisplay" class="current-industry">
+            Industry:<br>
+            <span>Behavioral</span>
+        </div>
+
+        <!-- Audio Settings -->
+        <button id="voiceModelBtn" class="audio-button">Voice Model</button>
+        <button id="inputDeviceBtn" class="audio-button">Input Device</button>
+
+        <!-- Toggle Controls -->
+        <div class="controls">
+            <button id="showLogsBtn" class="toggle-button active">Show Logs</button>
+        </div>
+    </div>
+
+    <div class="main-container">
         <div class="columns-container">
-            <div id="conversation" class="timeline column" style="width: 600px; min-width: 400px; max-width: 700px;">
+            <!-- Conversation Column -->
+            <div id="conversation" class="timeline column">
                 <h2>Interview Conversation</h2>
                 <div id="conversationMessages" class="syncscroll" name="timeline"></div>
+                <!-- Score Panel (Learning Mode) -->
+                <div id="scorePanel" class="score-section" style="display: none;">
+                    <h3>Answer Scores</h3>
+                    <div id="scoreMessages"></div>
+                </div>
             </div>
-            <div id="logs" class="timeline column" style="width: 500px; min-width: 350px; max-width: 600px;">
+            
+            <!-- Logs Column -->
+            <div id="logs" class="timeline column">
                 <h2>System Logs</h2>
                 <div id="logMessages" class="syncscroll" name="timeline"></div>
             </div>
-        </div>
-        <!-- Coding Editor Section -->
-        <div class="editor-section" id="editorSection" style="display: none;">
-            <h2>Code Editor</h2>
-            <div id="codeEditor" style="height: 450px; width: 100%; max-width: 1000px; border: 1px solid #ccc; border-radius: 8px;"></div>
-            <div class="editor-btn-row">
-                <button id="requestHintBtn" class="mic-button">Request Hint</button>
-                <button id="runCodeBtn" class="mic-button" style="background: linear-gradient(90deg, #4ae24a 0%, #2e8b57 100%);">Run Code</button>
+            
+            <!-- Code Editor (Software Engineering) -->
+            <div class="editor-section column" id="editorSection" style="display: none;">
+                <div class="editor-controls-row">
+                    <h2>Code Editor</h2>
+                    <div id="difficultySelection" class="difficulty-selection">
+                        <label for="difficultySelect">Question Difficulty:</label>
+                        <select id="difficultySelect">
+                            <option value="">All Levels</option>
+                            <option value="easy">Easy</option>
+                            <option value="medium">Medium</option>
+                            <option value="hard">Hard</option>
+                        </select>
+                    </div>
+                    <button id="runCodeBtn" class="mic-button">Run Code</button>
+                </div>
+                <div id="codeEditor"></div>
+                <div id="outputBox" class="output-box">Output:</div>
             </div>
-            <div id="hintBox" class="hint-box" style="margin-top: 18px; display: none;"></div>
-            <div id="outputBox" class="output-box" style="margin-top: 18px; display: none;"></div>
         </div>
     </div>
 
@@ -74,95 +93,107 @@
         </div>
     </div>
 
+    <!-- Voice Model Selection Popup -->
+    <div id="voiceModelPopup" class="popup-overlay">
+        <div class="popup-content">
+            <h3>Select Voice Model</h3>
+            <div id="voiceModelList" class="selection-list"></div>
+            <div class="popup-buttons">
+                <button id="cancelVoiceModel" class="popup-button">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Input Device Selection Popup -->
+    <div id="inputDevicePopup" class="popup-overlay">
+        <div class="popup-content">
+            <h3>Select Input Device</h3>
+            <div id="inputDeviceList" class="selection-list"></div>
+            <div class="popup-buttons">
+                <button id="cancelInputDevice" class="popup-button">Cancel</button>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.44.0/min/vs/loader.js"></script>
     <script>
         const socket = io();
         const startButton = document.getElementById('startButton');
         const industryButton = document.getElementById('industryButton');
-        const voiceModelSelect = document.getElementById('voiceModel');
+        const voiceModelBtn = document.getElementById('voiceModelBtn');
+        const inputDeviceBtn = document.getElementById('inputDeviceBtn');
         const industryPopup = document.getElementById('industryPopup');
         const industryList = document.getElementById('industryList');
         const cancelIndustry = document.getElementById('cancelIndustry');
-        const currentIndustryDisplay = document.getElementById('currentIndustryDisplay').querySelector('span');
+        const voiceModelPopup = document.getElementById('voiceModelPopup');
+        const voiceModelList = document.getElementById('voiceModelList');
+        const cancelVoiceModel = document.getElementById('cancelVoiceModel');
+        const inputDevicePopup = document.getElementById('inputDevicePopup');
+        const inputDeviceList = document.getElementById('inputDeviceList');
+        const cancelInputDevice = document.getElementById('cancelInputDevice');
+        const currentIndustryDisplay = document.getElementById('currentIndustryDisplay');
         const conversationMessages = document.getElementById('conversationMessages');
         const logMessages = document.getElementById('logMessages');
-        const statusDiv = document.getElementById('status');
-        const showLogsToggle = document.getElementById('showLogs');
+        const showLogsBtn = document.getElementById('showLogsBtn');
         const logsColumn = document.getElementById('logs');
-        const inputSelect = document.getElementById('inputDevice');
+        const learningModeBtn = document.getElementById('learningModeBtn');
+        const scorePanel = document.getElementById('scorePanel');
+        const scoreMessages = document.getElementById('scoreMessages');
+        const difficultySelect = document.getElementById('difficultySelect');
+        
         let isActive = false;
-        let currentGroup = null;
-        let lastMessageTimestamp = null;
         let messageCounter = 0;
-        const messageHeights = new Map(); // Store heights by counter
-        const messageOrder = []; // Keep track of message order
-        let currentIndustry = 'behavioral'; // Default industry
-        let currentIndustryName = 'Behavioral'; // Default industry name
-        let currentVoiceModel = 'aura-2-thalia-en'; // Default voice model
-        let currentVoiceName = ''; // Will be populated from the model name
-        let stuckTimeout = null;
-        let hasRequestedHint = false;
-        const STUCK_TIME_MS = 60000; // 60 seconds
-        const stuckPrompt = document.createElement('div');
-        stuckPrompt.className = 'hint-box';
-        stuckPrompt.style.background = '#ffeaea';
-        stuckPrompt.style.color = '#a94442';
-        stuckPrompt.style.display = 'none';
-        stuckPrompt.textContent = "It looks like you've been thinking for a while. Would you like a hint?";
-        document.querySelector('.editor-section').appendChild(stuckPrompt);
+        const messageHeights = new Map();
+        const messageOrder = [];
+        let currentIndustry = 'behavioral';
+        let currentIndustryName = 'Behavioral';
+        let currentVoiceModel = 'aura-2-thalia-en';
+        let currentVoiceName = '';
+        let currentInputDevice = '';
+        let currentInputDeviceName = 'Default';
+        let availableVoiceModels = [];
+        let availableInputDevices = [];
+        let isLearningMode = false;
 
-        // Populate audio devices
+
+        
         async function loadAudioDevices() {
             try {
-                // Request permission to access audio devices for the browser
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                 stream.getTracks().forEach(track => track.stop());
                 
-                // Clear existing options
-                inputSelect.innerHTML = '';
-                
-                // First add a "Default" option
-                const defaultOption = document.createElement('option');
-                defaultOption.value = "";
-                defaultOption.text = "Default (System)";
-                inputSelect.appendChild(defaultOption);
-                
-                // Fetch actual PyAudio devices from the backend
                 const response = await fetch('/audio-devices');
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
                 
                 const data = await response.json();
-                console.log('Backend audio devices:', data.devices);
                 
-                // Add the backend PyAudio devices
-                if (data.devices && data.devices.length > 0) {
-                    data.devices.forEach(device => {
-                        const option = document.createElement('option');
-                        option.value = device.index.toString();
-                        option.text = `${device.name} (Index: ${device.index})`;
-                        inputSelect.appendChild(option);
-                    });
-                    // Set index 0 as default if available
-                    inputSelect.value = data.devices[0].index.toString();
+                availableInputDevices = [
+                    { index: '', name: 'Default (System)' },
+                    ...(data.devices || [])
+                ];
+                
+                if (!currentInputDevice && availableInputDevices.length > 1) {
+                    currentInputDevice = availableInputDevices[1].index.toString();
+                    currentInputDeviceName = availableInputDevices[1].name;
                 }
-                
-                console.log(`Found ${data.devices.length} input devices from backend`);
             } catch (err) {
                 console.error('Error loading audio devices:', err);
-                statusDiv.textContent = 'Error: Could not access audio devices';
             }
         }
 
-        // Load devices initially and when devices change
         navigator.mediaDevices.addEventListener('devicechange', loadAudioDevices);
         loadAudioDevices();
-        
-        // Load TTS models
         loadTTSModels();
         
-        // Function to load TTS models from the API
+        voiceModelBtn.addEventListener('click', showVoiceModelPopup);
+        inputDeviceBtn.addEventListener('click', showInputDevicePopup);
+        cancelVoiceModel.addEventListener('click', closeVoiceModelPopup);
+        cancelInputDevice.addEventListener('click', closeInputDevicePopup);
+        industryButton.addEventListener('click', showIndustryPopup);
+        cancelIndustry.addEventListener('click', closeIndustryPopup);
+        
         function loadTTSModels() {
             fetch('/tts-models')
                 .then(response => response.json())
@@ -172,67 +203,24 @@
                         return;
                     }
                     
-                    // Clear existing options
-                    voiceModelSelect.innerHTML = '';
+                    availableVoiceModels = data.models.filter(model => model.name);
                     
-                    // Add options for each model
-                    data.models.forEach(model => {
-                        if (!model.name) return; // Skip if no name
-                        
-                        const option = document.createElement('option');
-                        option.value = model.name; // Use canonical_name as the value
-                        
-                        // Get a display name for the voice
-                        let displayName = model.display_name || model.name;
-                        displayName = displayName.charAt(0).toUpperCase() + displayName.slice(1);
-                        
-                        // Create descriptive text
-                        let description = '';
-                        if (model.accent) {
-                            description += model.accent + ' accent';
-                        }
-                        
-                        // Set the display text
-                        let optionText = displayName;
-                        if (model.language) {
-                            optionText += ' (' + model.language + ')';
-                        }
-                        if (description) {
-                            optionText += ' - ' + description;
-                        }
-                        option.text = optionText;
-                        
-                        // Store the voice name for later use
-                        option.dataset.voiceName = displayName;
-                        
-                        // Add tooltip with tags if available
-                        if (model.tags) {
-                            option.title = model.tags;
-                        }
-                        
-                        voiceModelSelect.appendChild(option);
-                    });
-                    
-                    // Set default selection if available
-                    if (voiceModelSelect.options.length > 0) {
-                        // If we have a current model, try to select it
+                    if (availableVoiceModels.length > 0) {
                         let found = false;
                         if (currentVoiceModel) {
-                            for (let i = 0; i < voiceModelSelect.options.length; i++) {
-                                if (voiceModelSelect.options[i].value === currentVoiceModel) {
-                                    voiceModelSelect.selectedIndex = i;
-                                    currentVoiceName = voiceModelSelect.options[i].dataset.voiceName;
-                                    found = true;
-                                    break;
-                                }
+                            const model = availableVoiceModels.find(m => m.name === currentVoiceModel);
+                            if (model) {
+                                currentVoiceName = model.display_name || model.name;
+                                currentVoiceName = currentVoiceName.charAt(0).toUpperCase() + currentVoiceName.slice(1);
+                                found = true;
                             }
                         }
                         
-                        // If not found or no current model, select the first one
                         if (!found) {
-                            voiceModelSelect.selectedIndex = 0;
-                            currentVoiceModel = voiceModelSelect.options[0].value;
-                            currentVoiceName = voiceModelSelect.options[0].dataset.voiceName;
+                            const firstModel = availableVoiceModels[0];
+                            currentVoiceModel = firstModel.name;
+                            currentVoiceName = firstModel.display_name || firstModel.name;
+                            currentVoiceName = currentVoiceName.charAt(0).toUpperCase() + currentVoiceName.slice(1);
                         }
                     }
                 })
@@ -241,31 +229,20 @@
                 });
         }
         
-        // Voice model selection handler
-        voiceModelSelect.addEventListener('change', function() {
-            currentVoiceModel = this.value;
-            const selectedOption = this.options[this.selectedIndex];
-            currentVoiceName = selectedOption.dataset.voiceName;
-        });
-        
-        // Initialize industry display
         function initializeIndustryDisplay() {
             fetch('/industries')
                 .then(response => response.json())
                 .then(industries => {
-                    // Find the display name for the current industry
                     if (industries[currentIndustry]) {
                         currentIndustryName = industries[currentIndustry];
-                        currentIndustryDisplay.textContent = currentIndustryName;
+                        currentIndustryDisplay.innerHTML = `Industry:<br><span>${currentIndustryName}</span>`;
                     }
                 })
                 .catch(error => console.error('Error initializing industry display:', error));
         }
         
-        // Initialize industry display on page load
         initializeIndustryDisplay();
         
-        // Load available industries
         function loadIndustries() {
             fetch('/industries')
                 .then(response => response.json())
@@ -286,21 +263,19 @@
                 .catch(error => console.error('Error loading industries:', error));
         }
         
-        // Select industry and close popup
         function selectIndustry(industry, name) {
             currentIndustry = industry;
             currentIndustryName = name;
-            currentIndustryDisplay.textContent = name;
+            currentIndustryDisplay.innerHTML = `Industry:<br><span>${name}</span>`;
             closeIndustryPopup();
             
-            // If agent is active, stop it and restart with new industry
+            updateDifficultyVisibility();
+            
             if (isActive) {
                 socket.emit('stop_voice_agent');
                 startButton.textContent = 'Start Interview';
-                statusDiv.textContent = 'Microphone: Not active';
                 isActive = false;
                 
-                // Add message about industry change
                 addConversationMessage({
                     role: 'system',
                     content: `Industry changed to ${name}. Click Start Interview to continue.`
@@ -309,24 +284,151 @@
             updateEditorVisibility();
         }
         
-        // Show industry popup
         function showIndustryPopup() {
             loadIndustries();
             industryPopup.style.display = 'flex';
         }
         
-        // Close industry popup
         function closeIndustryPopup() {
             industryPopup.style.display = 'none';
         }
         
-        // Industry button click handler
-        industryButton.addEventListener('click', showIndustryPopup);
+        function showVoiceModelPopup() {
+            voiceModelList.innerHTML = '';
+            
+            // Sort models to put the current model first
+            const sortedModels = [...availableVoiceModels].sort((a, b) => {
+                if (a.name === currentVoiceModel) return -1;
+                if (b.name === currentVoiceModel) return 1;
+                return 0;
+            });
+            
+            sortedModels.forEach(model => {
+                const item = document.createElement('div');
+                item.className = 'selection-item';
+                if (model.name === currentVoiceModel) {
+                    item.classList.add('selected');
+                }
+                
+                let displayName = model.display_name || model.name;
+                displayName = displayName.charAt(0).toUpperCase() + displayName.slice(1);
+                
+                let optionText = displayName;
+                if (model.language) {
+                    optionText += ' (' + model.language + ')';
+                }
+                if (model.accent) {
+                    optionText += ' - ' + model.accent + ' accent';
+                }
+                
+                item.textContent = optionText;
+                item.dataset.modelName = model.name;
+                item.dataset.displayName = displayName;
+                
+                item.addEventListener('click', () => selectVoiceModel(model.name, displayName));
+                voiceModelList.appendChild(item);
+            });
+            voiceModelPopup.style.display = 'flex';
+        }
         
-        // Cancel button click handler
-        cancelIndustry.addEventListener('click', closeIndustryPopup);
+        function closeVoiceModelPopup() {
+            voiceModelPopup.style.display = 'none';
+        }
+        
+        function selectVoiceModel(modelName, displayName) {
+            currentVoiceModel = modelName;
+            currentVoiceName = displayName;
+            closeVoiceModelPopup();
+        }
+        
+        function showInputDevicePopup() {
+            inputDeviceList.innerHTML = '';
+            availableInputDevices.forEach(device => {
+                const item = document.createElement('div');
+                item.className = 'selection-item';
+                if (device.index.toString() === currentInputDevice) {
+                    item.classList.add('selected');
+                }
+                
+                item.textContent = device.name;
+                item.dataset.deviceIndex = device.index;
+                
+                item.addEventListener('click', () => selectInputDevice(device.index.toString(), device.name));
+                inputDeviceList.appendChild(item);
+            });
+            inputDevicePopup.style.display = 'flex';
+        }
+        
+        function closeInputDevicePopup() {
+            inputDevicePopup.style.display = 'none';
+        }
+        
+        function selectInputDevice(deviceIndex, deviceName) {
+            currentInputDevice = deviceIndex;
+            currentInputDeviceName = deviceName;
+            closeInputDevicePopup();
+        }
 
-        // Send selected devices to server when starting
+        learningModeBtn.addEventListener('click', function() {
+            isLearningMode = !isLearningMode;
+            
+            if (isLearningMode) {
+                this.textContent = 'Learning Mode';
+                this.dataset.mode = 'learning';
+            } else {
+                this.textContent = 'Interview Mode';
+                this.dataset.mode = 'interview';
+            }
+            
+            updateLearningModeVisibility();
+            
+            if (isActive) {
+                socket.emit('stop_voice_agent');
+                startButton.textContent = 'Start Interview';
+                isActive = false;
+                
+                const modeText = isLearningMode ? 'Learning Mode (with scores & feedback)' : 'Interview Mode (realistic)';
+                addConversationMessage({
+                    role: 'system',
+                    content: `Switched to ${modeText}. Click Start Interview to continue.`
+                });
+            }
+        });
+
+        function updateLearningModeVisibility() {
+            scorePanel.style.display = isLearningMode ? 'block' : 'none';
+        }
+
+        function addScoreMessage(scoreData) {
+            const scoreDiv = document.createElement('div');
+            scoreDiv.className = 'timeline-item score-message';
+            
+            const { overall, confidence, presentation, correctness, feedback } = scoreData;
+            
+            scoreDiv.innerHTML = `
+                <div class="score-header">Answer Score</div>
+                <div class="score-overall">Overall: <span class="score-value">${overall}/5</span></div>
+                <div class="score-breakdown">
+                    <div>Confidence: ${confidence}/5</div>
+                    <div>Presentation: ${presentation}/5</div>
+                    <div>Correctness: ${correctness}/5</div>
+                </div>
+                <div class="score-feedback">${feedback}</div>
+            `;
+            
+            scoreMessages.appendChild(scoreDiv);
+            const conversationColumn = document.getElementById('conversation');
+            conversationColumn.scrollTop = conversationColumn.scrollHeight;
+        }
+
+        updateLearningModeVisibility();
+        
+        function updateDifficultyVisibility() {
+            if (currentIndustry !== 'software_engineering') {
+                difficultySelect.value = '';
+            }
+        }
+
         startButton.addEventListener('click', async () => {
             if (!isActive) {
                 const hasPermission = await requestMicrophonePermission();
@@ -336,18 +438,18 @@
                 }
 
                 socket.emit('start_voice_agent', {
-                    inputDeviceId: inputSelect.value,
+                    inputDeviceId: currentInputDevice,
                     industry: currentIndustry,
                     voiceModel: currentVoiceModel,
-                    voiceName: currentVoiceName
+                    voiceName: currentVoiceName,
+                    learningMode: isLearningMode,
+                    difficulty: difficultySelect.value || null
                 });
                 startButton.textContent = 'Stop Interview';
-                statusDiv.textContent = 'Microphone: Active';
                 isActive = true;
             } else {
                 socket.emit('stop_voice_agent');
                 startButton.textContent = 'Start Interview';
-                statusDiv.textContent = 'Microphone: Not active';
                 isActive = false;
             }
         });
@@ -355,12 +457,10 @@
         async function requestMicrophonePermission() {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                statusDiv.textContent = 'Microphone: Permission granted';
-                stream.getTracks().forEach(track => track.stop()); // Stop the stream as we don't need it yet
+                stream.getTracks().forEach(track => track.stop());
                 return true;
             } catch (err) {
                 console.error('Error accessing microphone:', err);
-                statusDiv.textContent = 'Microphone: Permission denied';
                 return false;
             }
         }
@@ -379,7 +479,6 @@
             });
         }
 
-        // Add a message to the conversation display
         function addConversationMessage(data) {
             const timestamp = new Date().toISOString();
             const currentCounter = messageCounter++;
@@ -392,12 +491,11 @@
             
             insertTimelineItem(messageDiv, timestamp, conversationMessages);
             
-            // Create a spacer in the log column
             const logSpacer = createSpacer(messageDiv.offsetHeight);
             logSpacer.dataset.messageId = currentCounter;
             insertTimelineItem(logSpacer, timestamp, logMessages);
             
-            if (!showLogsToggle.checked) {
+            if (showLogsBtn.classList.contains('inactive')) {
                 logSpacer.style.display = 'none';
                 logSpacer.style.height = '0';
             }
@@ -408,7 +506,6 @@
 
         socket.on('conversation_update', (data) => {
             if (data && data.type === 'ConversationText' && data.role === 'assistant' && data.content) {
-                // Heuristic: if the message looks like a question, set it
                 if (data.content.endsWith('?')) {
                     socket.emit('set_current_question', { question: data.content });
                 }
@@ -432,7 +529,7 @@
                 logSpacer.dataset.messageId = currentCounter;
                 insertTimelineItem(logSpacer, timestamp, logMessages);
                 
-                if (!showLogsToggle.checked) {
+                if (showLogsBtn.classList.contains('inactive')) {
                     logSpacer.style.display = 'none';
                     logSpacer.style.height = '0';
                 }
@@ -462,7 +559,7 @@
                 conversationSpacer.dataset.messageId = currentCounter;
                 insertTimelineItem(conversationSpacer, data.timestamp, conversationMessages);
                 
-                if (!showLogsToggle.checked) {
+                if (showLogsBtn.classList.contains('inactive')) {
                     conversationSpacer.style.display = 'none';
                     conversationSpacer.style.height = '0';
                 }
@@ -472,10 +569,15 @@
             });
         });
 
+        socket.on('answer_score', (scoreData) => {
+            if (isLearningMode) {
+                addScoreMessage(scoreData);
+            }
+        });
+
         function insertTimelineItem(element, timestamp, container) {
             const time = new Date(timestamp);
             
-            // Find the correct position to insert the new element
             const items = container.children;
             let insertPosition = container.childNodes.length;
             
@@ -498,32 +600,17 @@
 
         function convertAnsiToHtml(text) {
             const ansiToHtml = {
-                // Dark mode colors
-                dark: {
-                    '[38;5;231m': 'color: #fff;',     // WHITE
-                    '[38;5;116m': 'color: #87d7d7;',  // BLUE
-                    '[38;5;114m': 'color: #87d787;',  // GREEN
-                    '[38;5;183m': 'color: #d7afff;',  // VIOLET
-                    '[38;5;186m': 'color: #d7d787;',  // YELLOW
-                },
-                // Light mode colors (darker variants)
-                light: {
-                    '[38;5;231m': 'color: #000;',     // BLACK
-                    '[38;5;116m': 'color: #0086b3;',  // BLUE
-                    '[38;5;114m': 'color: #008744;',  // GREEN
-                    '[38;5;183m': 'color: #8b3d90;',  // VIOLET
-                    '[38;5;186m': 'color: #b36d00;',  // YELLOW
-                },
-                // Reset is the same for both
+                '[38;5;231m': 'color: #fff;',
+                '[38;5;116m': 'color: #87d7d7;',
+                '[38;5;114m': 'color: #87d787;',
+                '[38;5;183m': 'color: #d7afff;',
+                '[38;5;186m': 'color: #d7d787;',
                 '[0m': ''
             };
 
-            // First remove all reset codes from the text
             let html = text.replace(/\[0m/g, '');
-            const isDarkMode = document.body.classList.contains('dark-mode');
-            const colorSet = isDarkMode ? ansiToHtml.dark : ansiToHtml.light;
 
-            for (const [ansi, style] of Object.entries(colorSet)) {
+            for (const [ansi, style] of Object.entries(ansiToHtml)) {
                 const parts = html.split(ansi);
                 if (parts.length > 1) {
                     html = parts.map((part, i) => {
@@ -544,7 +631,6 @@
             console.log('Disconnected from server');
             isActive = false;
             startButton.textContent = 'Start Interview';
-            statusDiv.textContent = 'Microphone: Not active';
         });
 
         socket.on('error', (error) => {
@@ -552,14 +638,28 @@
             alert('An error occurred. Please check the console for details.');
         });
 
-        showLogsToggle.addEventListener('change', () => {
-            logsColumn.style.display = showLogsToggle.checked ? 'flex' : 'none';
+        showLogsBtn.addEventListener('click', () => {
+            if (currentIndustry === 'software_engineering') {
+                return;
+            }
             
-            if (showLogsToggle.checked) {
-                // Process messages in chronological order
+            const isActive = !showLogsBtn.classList.contains('inactive');
+            
+            if (isActive) {
+                showLogsBtn.classList.add('inactive');
+                logsColumn.style.display = 'none';
+                
+                const allSpacers = document.querySelectorAll('.timeline-spacer');
+                allSpacers.forEach(spacer => {
+                    spacer.style.display = 'none';
+                    spacer.style.height = '0';
+                });
+            } else {
+                showLogsBtn.classList.remove('inactive');
+                logsColumn.style.display = 'flex';
+                
                 messageOrder.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
                 
-                // First reset all spacers
                 const allSpacers = document.querySelectorAll('.timeline-spacer');
                 allSpacers.forEach(spacer => {
                     spacer.style.display = 'block';
@@ -597,80 +697,39 @@
                 requestAnimationFrame(() => {
                     syncscroll.reset();
                 });
-            } else {
-                const allSpacers = document.querySelectorAll('.timeline-spacer');
-                allSpacers.forEach(spacer => {
-                    spacer.style.display = 'none';
-                    spacer.style.height = '0';
-                });
             }
         });
 
-        // Initialize logs visibility
-        logsColumn.style.display = showLogsToggle.checked ? 'flex' : 'none';
+        logsColumn.style.display = 'flex';
 
-        const darkModeToggle = document.getElementById('darkMode');
-        
-        // Initialize theme
-        document.body.classList.toggle('dark-mode', darkModeToggle.checked);
-        
-        // Theme toggle handler
-        darkModeToggle.addEventListener('change', () => {
-            document.body.classList.toggle('dark-mode', darkModeToggle.checked);
-            
-            // Save preference
-            localStorage.setItem('darkMode', darkModeToggle.checked);
-            
-            // Reprocess all log messages with new colors
-            const logMessages = document.querySelectorAll('.timeline-item.log-message');
-            logMessages.forEach(logMessage => {
-                const originalText = logMessage.getAttribute('data-original-text');
-                if (originalText) {
-                    logMessage.innerHTML = convertAnsiToHtml(originalText);
-                }
-            });
-        });
-        
-        // Load saved preference
-        document.addEventListener('DOMContentLoaded', () => {
-            const savedDarkMode = localStorage.getItem('darkMode');
-            if (savedDarkMode !== null) {
-                const isDarkMode = savedDarkMode === 'true';
-                darkModeToggle.checked = isDarkMode;
-                document.body.classList.toggle('dark-mode', isDarkMode);
-            }
-        });
-
-        // Show/hide code editor based on industry and adjust column widths
         function updateEditorVisibility() {
             const editorSection = document.getElementById('editorSection');
-            const convCol = document.getElementById('conversation');
-            const logsCol = document.getElementById('logs');
+            const logsColumn = document.getElementById('logs');
+            const showLogsBtn = document.getElementById('showLogsBtn');
+            
             if (currentIndustry === 'software_engineering') {
-                editorSection.style.display = '';
-                editorSection.style.width = '100%';
-                editorSection.style.maxWidth = '700px';
-                editorSection.style.margin = '0 auto';
-                if (convCol) convCol.style.width = '250px';
-                if (logsCol) logsCol.style.width = '250px';
-                const codeEditorDiv = document.getElementById('codeEditor');
-                if (codeEditorDiv) codeEditorDiv.style.width = '100%';
+                editorSection.style.display = 'flex';
+                logsColumn.style.display = 'none';
+                showLogsBtn.style.display = 'inline-block';
+                showLogsBtn.classList.add('inactive');
+                showLogsBtn.classList.add('disabled');
+                showLogsBtn.title = 'Logs are disabled in Software Engineering mode';
                 if (window.editor && window.monaco) {
                     setTimeout(() => window.editor.layout(), 100);
                 }
             } else {
                 editorSection.style.display = 'none';
-                editorSection.style.width = '';
-                editorSection.style.maxWidth = '';
-                editorSection.style.margin = '';
-                if (convCol) convCol.style.width = '600px';
-                if (logsCol) logsCol.style.width = '500px';
+                showLogsBtn.style.display = 'inline-block';
+                showLogsBtn.classList.remove('disabled');
+                showLogsBtn.title = '';
+                if (!showLogsBtn.classList.contains('inactive')) {
+                    logsColumn.style.display = 'flex';
+                }
             }
         }
-        // Call on page load and whenever industry changes
+        
         updateEditorVisibility();
 
-        // Monaco Editor Integration
         require.config({ paths: { 'vs': 'https://cdn.jsdelivr.net/npm/monaco-editor@0.44.0/min/vs' } });
         require(['vs/editor/editor.main'], function () {
             window.editor = monaco.editor.create(document.getElementById('codeEditor'), {
@@ -679,74 +738,37 @@
                 theme: 'vs-dark',
                 fontSize: 16,
                 minimap: { enabled: false },
-                automaticLayout: true
+                automaticLayout: true,
+                lineNumbersMinChars: 2,
+                glyphMargin: false,
+                folding: false,
+                lineDecorationsWidth: 0,
+                renderLineHighlight: 'none'
             });
             window.monaco = monaco;
             editor.onDidChangeModelContent(() => {
                 const code = editor.getValue();
                 socket.emit('code_update', { code });
-                onCodeChange();
             });
         });
-        // Request Hint Button
-        document.getElementById('requestHintBtn').addEventListener('click', function() {
-            const code = editor ? editor.getValue() : '';
-            socket.emit('request_hint', { code });
-            hasRequestedHint = true;
-            stuckPrompt.style.display = 'none';
-        });
-
-        socket.on('hint_response', function(data) {
-            const hintBox = document.getElementById('hintBox');
-            if (data && data.hint) {
-                hintBox.textContent = data.hint;
-                hintBox.style.display = 'block';
-            } else {
-                hintBox.textContent = 'No hint available.';
-                hintBox.style.display = 'block';
-            }
-        });
-
-        // Placeholder: emit transcript_update as the user speaks (integrate with STT later)
-        // Example: socket.emit('transcript_update', { transcript: liveTranscript });
-
-        function resetStuckTimer() {
-            if (stuckTimeout) clearTimeout(stuckTimeout);
-            stuckPrompt.style.display = 'none';
-            hasRequestedHint = false;
-            stuckTimeout = setTimeout(() => {
-                if (!hasRequestedHint) {
-                    stuckPrompt.style.display = 'block';
-                }
-            }, STUCK_TIME_MS);
-        }
-
-        // Reset timer on page load
-        resetStuckTimer();
 
         document.getElementById('runCodeBtn').addEventListener('click', function() {
             const code = editor ? editor.getValue() : '';
             socket.emit('run_code', { code });
         });
+        
         socket.on('code_output', function(data) {
             const outputBox = document.getElementById('outputBox');
             if (data && data.output !== undefined) {
-                outputBox.textContent = data.output;
-                outputBox.style.display = 'block';
+                outputBox.textContent = 'Output: ' + data.output;
             } else {
-                outputBox.textContent = 'No output.';
-                outputBox.style.display = 'block';
-            }
-        });
-
-        // Instead, set editorSection width to match conversation column on page load
-        document.addEventListener('DOMContentLoaded', function() {
-            const convCol = document.getElementById('conversation');
-            const editorSection = document.getElementById('editorSection');
-            if (convCol && editorSection) {
-                editorSection.style.width = convCol.offsetWidth + 'px';
+                outputBox.textContent = 'Output: No output.';
             }
         });
     </script>
+    
+    <footer class="app-footer">
+        <span>Powered by <a href="https://deepgram.com/product/voice-agent-api" target="_blank">Deepgram</a></span>
+    </footer>
 </body>
 </html>

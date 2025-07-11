@@ -5,57 +5,217 @@ logger = logging.getLogger(__name__)
 
 # Interview question bank organized by industry
 INTERVIEW_QUESTION_BANK = {
-    "software_engineering": [
-        {
-            "main": """Given an integer array nums, return all the triplets nums i, nums j, and nums k where 
-            nums i plus nums j plus nums k equal 0, and the indices i, j and k are all distinct.
-            The output should not contain any duplicate triplets. You may return the output and the triplets in any order.
-            For example, if the input is an array 'nums' containing negative 1 , 0, 1, 2, negative 1, and negative 4 the output would be negative 1, negative 1, 2 and negative 1, 0, 1.
-            If the only possible triple does not sum up to 0, the output should be empty""",
-            "hints": [
-                "You should aim for a solution with O of n squared time and O of 1 space, where n is the size of the input array.",
-                "A brute force solution would be to check for every triplet in the array. This would be an O of n cubed solution. Can you think of a better way?",
-                """We can iterate through nums with index i and get nums i equals negative nums j plus nums k after rearranging the equation, making negative nums i equal nums j plus 
-                nums k. For each index i, we should efficiently calculate the j and k pairs without duplicates. Which algorithm is suitable to find j and k pairs?""",
-                """To efficiently find the j and k pairs, we run the two pointer approach on the elements to the right of index i as the array is sorted. When we run two 
-                pointer algorithm, consider j and k as pointers (j is at left, k is at right) and target equals negative nums i, if the current sum num j plus nums k is less than the target then we 
-                need to increase the value of current sum by incrementing j pointer. Else if the current sum num j plus nums k is greater than the target then we should decrease the value of 
-                current sum by decrementing k pointer. How do you deal with duplicates?""",
-                """When the current sum nums j plus nums k equals the target add this pair to the result. We can move j or k pointer until j is less than k and the pairs are repeated. 
-                This ensures that no duplicate pairs are added to the result.""",
-            ]
-        },
-        {
-            "main": """Design an algorithm to encode a list of strings to a single string. The encoded string is then decoded back to the original list of strings.
-            Please implement encode and decode. For example, if the input is ["neet","code","love","you"] the output would be ["neet","code","love","you"] or if the i
-            input is ["we","say",":","yes"] teh output would be ["we","say",":","yes"]""",
-            "hints": [
-                "You should aim for a solution with O(m) time for each encode() and decode() call and O(m+n) space, where m is the sum of lengths of all the strings and n is the number of strings.",
-                "A naive solution would be to use a non-ascii character as a delimiter. Can you think of a better way?",
-                "Try to encode and decode the strings using a smart approach based on the lengths of each string. How can you differentiate between the lengths and any numbers that might be present in the strings?",
-                """We can use an encoding approach where we start with a number representing the length of the string, followed by a separator character 
-                (let's use # for simplicity), and then the string itself. To decode, we read the number until we reach a #, then use that number to read the specified number of characters as the string.""",
-            ]
-        },
-        {
-            "main": """You are given an array of length n which was originally sorted in ascending order. It has now been rotated between 1 and n times. For example, the array nums of [1,2,3,4,5,6] might become
-            [3,4,5,6,1,2] if it was rotated 4 times or [1,2,3,4,5,6] if it was rotated 6 times. Given the rotated sorted array nums and an integer target, return the index of target within nums, or -1 if it is not present.
-            You may assume all elements in the sorted rotated array nums are unique, A solution that runs in O(n) time is trivial, can you write an algorithm that runs in O(log n) time?
-            For example, if an array nums contains [3,4,5,6,1,2], and teh traget is one, the output should be 4. Or if nums contains [3,4,5,6,0,1,2] and the target is 4, the output should be -1.""",
-            "hints": [
-                "You should aim for a solution with O(logn) time and O(1) space, where n is the size of the input array.",
-                "A brute force solution would be to do a linear search on the array to find the target element. This would be an O(n) solution. Can you think of a better way? Maybe an efficient searching algorithm is helpful.",
-                """Given that the array is rotated after sorting, elements from the right end are moved to the left end one by one, creating two sorted segments separated by a deflection point due to the rotation. 
-                For example, consider the array [3, 4, 1, 2], which is rotated twice, resulting in two sorted segments: [3, 4] and [1, 2]. In a fully sorted array, it's easy to find the target. So, if you can identify 
-                the deflection point (cut), you can perform a binary search on both segments to find the target element. Can you use binary search to find this cut?""",
-                """We perform a binary search on the array with pointers l and r, which belong to two different sorted segments. For example, in [3, 4, 5, 6, 1, 2, 3], l = 0, r = 6, and mid = 3. 
-                At least two of l, mid, and r will always be in the same sorted segment. Can you find conditions to eliminate one half and continue the binary search? Perhaps analyzing all possible conditions for l, mid, and r may help.""",
-                """There are two cases: l and mid belong to the left sorted segment, or mid and r belong to the right sorted segment. If l and mid are in the same segment, nums[l] < nums[mid], so the pivot index must lie in the right part. 
-                If mid and r are in the same segment, nums[mid] < nums[r], so the pivot index must lie in the left part. After the binary search, we eventually find the pivot index. Once the pivot is found, it's straightforward to select the 
-                segment where the target lies and perform a binary search on that segement to find its position. If we don't find the target, we return -1.""",
-            ]
-        },
-    ],
+    "software_engineering": {
+        "easy": [
+            {
+                "main": """Given an integer array nums, return true if any value appears more than once in the array, otherwise return false.
+                    For example, if the input is an array nums containing 1, 2, 3, 3, the output should be true.
+                    If the input is an array nums containing 1, 2, 3, 4, the output should be false.""",
+                "difficulty": "easy",
+                "hints": [
+                    "You should aim for a solution with O(n) time and O(n) space, where n is the size of the input array.",
+                    "A brute force solution would be to check every element against every other element in the array. This would be an O(n^2) solution. Can you think of a better way?",
+                    "Is there a way to check if an element is a duplicate without comparing it to every other element? Maybe there's a data structure that is useful here.",
+                    "We can use a hash data structure like a hash set or hash map to store elements we've already seen. This will allow us to check if an element is a duplicate in constant time.",
+                ]
+            },
+            {
+                "main": """Given two strings s and t, return true if the two strings are anagrams of each other, otherwise return false.
+                An anagram is a string that contains the exact same characters as another string, but the order of the characters can be different.
+                For example, if the input is a string s containing 'racecar' and a string t containing 'carrace', the output should be true.
+                If the input is a string s containing 'jar' and a string t containing 'jam', the output should be false.
+                s and t consist of lowercase English letters.""",
+                "difficulty": "easy",
+                "hints": [
+                    "You should aim for a solution with big O of (n + m) time and big O of (1) space, where n is the length of the string s and m is the length of the string t.",
+                    "A brute force solution would be to sort the given strings and check for their equality. This would be an big O of ( n log n + m log m ) solution. Though this solution is acceptable, can you think of a better way without sorting the given strings?",
+                    "By the definition of the anagram, we can rearrange the characters. Does the order of characters matter in both the strings? Then what matters?",
+                    "We can just consider maintaining the frequency of each character. We can do this by having two separate hash tables for the two strings. Then, we can check whether the frequency of each character in string s is equal to that in string t and vice versa.",
+                ]
+            },
+            {
+                "main": """Given an array of integers nums and an integer target, return the indices i and j such that nums at i + nums at j equals the target and i is not equal to j.
+                    You may assume that every input has exactly one pair of indices i and j that satisfy the condition.
+                    Return the answer with the smaller index first.
+                    If the input is an array nums containing 3, 4, 5, 6, and the target is 7, the output should be 0 and 1.
+                    If the input is an array nums containing 4, 5, 6, and the target is 10, the output should be 0 and 2.""",
+                "difficulty": "easy",
+                "hints": [
+                    "You should aim for a solution with big O of (n) time and big O of (n) space, where n is the size of the input array.",
+                    "A brute force solution would be to check every pair of numbers in the array. This would be an big O of (n squared) solution. Can you think of a better way? Maybe in terms of mathematical equation?",
+                    "Given, we need to find indices i and j such that i is not equal to j and nums at [i] + nums at [j] is equal to the target. Can you rearrange the equation and try to fix any index to iterate on?",
+                    "We can iterate through nums with index i. Let difference = target - nums at [i] and check if difference exists in the hash map as we iterate through the array, else store the current element in the hashmap with its index and continue. We use a hashmap for big O of (1) lookups.",
+                ]
+            },
+            {
+                "main": """Given a string s, return true if it is a palindrome, otherwise return false.
+                    A palindrome is a string that reads the same forward and backward. It is also case-insensitive and ignores all non-alphanumeric characters.
+                    Note: Alphanumeric characters consist of letters (capital A through Z and lowercase a through z) and numbers (0 through 9).
+                    If the input is a string s containing 'Was it a car or a cat I saw?', the output should be true.
+                    If the input is a string s containing 'tab a cat', the output should be false.""",
+                "difficulty": "easy",
+                "hints": [
+                    "You should aim for a solution with big O of (n) time and big O of (1) space, where n is the length of the input string.",
+                    "A brute force solution would be to create a copy of the string, reverse it, and then check for equality. This would be an big O of (n) solution with extra space. Can you think of a way to do this without big O of (n) space?",
+                    "Can you find the logic by observing the definition of pallindrome or from the brute force solution?",
+                    "A palindrome string is a string that is read the same from the start as well as from the end. This means the character at the start should match the character at the end at the same index. We can use the two pointer algorithm to do this efficiently.",
+                ]
+            },
+            {
+                "main": """You are given an integer array prices where prices at [i] is the price of NeetCoin on the ith day.
+                    You may choose a single day to buy one NeetCoin and choose a different day in the future to sell it.
+                    Return the maximum profit you can achieve. You may choose to not make any transactions, in which case the profit would be 0.
+                    If the input is an array prices containing 10, 1, 5, 6, 7, 1, the output should be 6.
+                    If the input is an array prices containing 10, 8, 7, 5, 2, the output should be 0.""",
+                "difficulty": "easy",
+                "hints": [
+                    "You should aim for a solution with big O of (n) time and big O of (1) space, where n is the size of the input array.",
+                    "A brute force solution would be to iterate through the array with index i, considering it as the day to buy, and trying all possible options for selling it on the days to the right of index i. This would be a big O of (n squared) solution. Can you think of a better way?",
+                    "You should buy at a price and always sell at a higher price. Can you iterate through the array with index i, considering it as either the buying price or the selling price?",
+                    "We can iterate through the array with index i, considering it as the selling value. But what value will it be optimal to consider as buying point on the left of index i?",
+                    "We are trying to maximize profit = sell - buy. If the current i is the sell value, we want to choose the minimum buy value to the left of i to maximize the profit. The result will be the maximum profit among all. However, if all profits are negative, we can return 0 since we are allowed to skip doing transaction.",
+                ]
+            },
+        ],
+        "medium": [
+            {
+                "main": """Given an array of strings strs, group all anagrams together into sublists. You may return the output in any order.
+                    An anagram is a string that contains the exact same characters as another string, but the order of the characters can be different.
+                    For example, if the input is an array strs containing 'act', 'pots', 'tops', 'cat', 'stop', 'hat', the output should be [['hat'], ['act', 'cat'], ['stop', 'pots', 'tops']].
+                    If the input is an array strs containing 'x', the output should be [['x']].
+                    If the input is an array strs containing '', the output should be [['']].""",
+                "difficulty": "medium",
+                "hints": [
+                    "You should aim for a solution with O(m * n) time and O(m) space, where m is the number of strings and n is the length of the longest string.",
+                    "A naive solution would be to sort each string and group them using a hash map. This would be an O(m * nlogn) solution. Though this solution is acceptable, can you think of a better way without sorting the strings?",
+                    "By the definition of an anagram, we only care about the frequency of each character in a string. How is this helpful in solving the problem?",
+                    "We can simply use an array of size O(26), since the character set is a through z (26 continuous characters), to count the frequency of each character in a string. Then, we can use this array as the key in the hash map to group the strings.",
+                ]
+            },
+            {
+                "main": """Given an integer array nums and an integer k, return the k most frequent elements within the array.
+                    The test cases are generated such that the answer is always unique.
+                    You may return the output in any order.
+                    If the input is an array nums containing 1, 2, 2, 3, 3, 3, and the k is 2, the output should be 2 and 3.
+                    If the input is an array nums containing 7, 7, and the k is 1, the output should be 7.""",
+                "difficulty": "medium",
+                "hints": [
+                    "You should aim for a solution with O(n) time and O(n) space, where n is the size of the input array.",
+                    "A naive solution would be to count the frequency of each number and then sort the array based on each element's frequency. After that, we would select the top k frequent elements. This would be an O(nlogn) solution. Though this solution is acceptable, can you think of a better way?",
+                    "Can you think of an algorithm which involves grouping numbers based on their frequency?",
+                    "Use the bucket sort algorithm to create n buckets, grouping numbers based on their frequencies from 1 to n. Then, pick the top k numbers from the buckets, starting from n down to 1.",
+                ]
+            },
+            {
+                "main": """Design an algorithm to encode a list of strings to a single string. The encoded string is then decoded back to the original list of strings.
+                    Please implement encode and decode.
+                    If the input is an array strs containing 'neet', 'code', 'love', 'you', the output should be 'neetcodeloveyou'.
+                    If the input is an array strs containing 'we', 'say', ':', 'yes', the output should be 'wesay:yes'.""",
+                "difficulty": "medium",
+                "hints": [
+                    "You should aim for a solution with O(m) time for each encode() and decode() call and O(m+n) space, where m is the sum of lengths of all the strings and n is the number of strings.",
+                    "A naive solution would be to use a non-ascii character as a delimiter. Can you think of a better way?",
+                    "Try to encode and decode the strings using a smart approach based on the lengths of each string. How can you differentiate between the lengths and any numbers that might be present in the strings?",
+                    "We can use an encoding approach where we start with a number representing the length of the string, followed by a separator character (let's use # for simplicity), and then the string itself. To decode, we read the number until we reach a #, then use that number to read the specified number of characters as the string.",
+                ]
+            },
+            {
+                "main": """Given an integer array nums, return an array output where output[i] is the product of all the elements of nums except nums[i].
+                    Each product is guaranteed to fit in a 32-bit integer.
+                    If the input is an array nums containing 1, 2, 4, 6, the output should be 48, 24, 12, 8.
+                    If the input is an array nums containing -1, 0, 1, 2, 3, the output should be 0, -6, 0, 0, 0.""",
+                "difficulty": "medium",
+                "hints": [
+                    "You should aim for a solution as good or better than O(n) time and O(n) space, where n is the size of the input array.",
+                    "A brute-force solution would be to iterate through the array with index i and compute the product of the array except for that index element. This would be an O(n^2) solution. Can you think of a better way?",
+                    "Is there a way to avoid the repeated work? Maybe we can store the results of the repeated work in an array.",
+                    "We can use the prefix and suffix technique. First, we iterate from left to right and store the prefix products for each index in a prefix array, excluding the current index's number. Then, we iterate from right to left and store the suffix products for each index in a suffix array, also excluding the current index's number. Can you figure out the solution from here?",
+                    "We can use the stored prefix and suffix products to compute the result array by iterating through the array and simply multiplying the prefix and suffix products at each index.",
+                ]
+            },
+            {
+                "main": """Given an array of integers nums, return the length of the longest consecutive sequence of elements that can be formed.
+                    A consecutive sequence is a sequence of elements in which each element is exactly 1 greater than the previous element. The elements do not have to be consecutive in the original array.
+                    You must write an algorithm that runs in O(n) time.
+                    If the input is an array nums containing 2, 20, 4, 10, 3, 4, 5, the output should be 4.
+                    If the input is an array nums containing 0, 3, 2, 5, 4, 6, 1, 1, the output should be 7.""",
+                "difficulty": "medium",
+                "hints": [
+                    "You should aim for a solution as good or better than O(n) time and O(n) space, where n is the size of the input array.",
+                    "A brute force solution would be to consider every element from the array as the start of the sequence and count the length of the sequence formed with that starting element. This would be an O(n^2) solution. Can you think of a better way?",
+                    "Is there any way to identify the start of a sequence? For example, in [1, 2, 3, 10, 11, 12], only 1 and 10 are the beginning of a sequence. Instead of trying to form a sequence for every number, we should only consider numbers like 1 and 10.",
+                    "We can consider a number num as the start of a sequence if and only if num - 1 does not exist in the given array. We iterate through the array and only start building the sequence if it is the start of a sequence. This avoids repeated work. We can use a hash set for O(1) lookups by converting the array to a hash set.",
+                ]
+            },
+            {
+                "main": """Given an integer array nums, return all the triplets [nums[i], nums[j], nums[k]] where nums[i] + nums[j] + nums[k] == 0, and the indices i, j and k are all distinct.
+                    The output should not contain any duplicate triplets. You may return the output and the triplets in any order.
+                    If the input is an array nums containing -1, 0, 1, 2, -1, -4, the output should be [[-1, -1, 2], [-1, 0, 1]].
+                    If the input is an array nums containing 0, 1, 1, the output should be [].
+                    If the input is an array nums containing 0, 0, 0, the output should be [[0, 0, 0]].""",
+                "difficulty": "medium",
+                "hints": [
+                    "You should aim for a solution with O(n^2) time and O(1) space, where n is the size of the input array.",
+                    "A brute force solution would be to check for every triplet in the array. This would be an O(n^3) solution. Can you think of a better way?",
+                    "Can you think of an algorithm after sorting the input array? What can we observe by rearranging the given equation in the problem?",
+                    "We can iterate through nums with index i and get nums[i] = -(nums[j] + nums[k]) after rearranging the equation, making -nums[i] = nums[j] + nums[k]. For each index i, we should efficiently calculate the j and k pairs without duplicates. Which algorithm is suitable to find j and k pairs?",
+                    "To efficiently find the j and k pairs, we run the two pointer approach on the elements to the right of index i as the array is sorted. When we run two pointer algorithm, consider j and k as pointers (j is at left, k is at right) and target = -nums[i], if the current sum num[j] + nums[k] < target then we need to increase the value of current sum by incrementing j pointer. Else if the current sum num[j] + nums[k] > target then we should decrease the value of current sum by decrementing k pointer. How do you deal with duplicates?",
+                    "When the current sum nums[j] + nums[k] == target add this pair to the result. We can move j or k pointer until j < k and the pairs are repeated. This ensures that no duplicate pairs are added to the result.",
+                ]
+            },
+            {
+                "main": """Given a string s, find the length of the longest substring without duplicate characters.
+                    A substring is a contiguous sequence of characters within a string.
+                    If the input is a string s containing 'zxyzxyz', the output should be 3.
+                    If the input is a string s containing 'xxxx', the output should be 1.""",
+                "difficulty": "medium",
+                "hints": [
+                    "You should aim for a solution with O(n) time and O(m) space, where n is the length of the string and m is the number of unique characters in the string.",
+                    "A brute force solution would be to try the substring starting at index i and try to find the maximum length we can form without duplicates by starting at that index. we can use a hash set to detect duplicates in O(1) time. Can you think of a better way?",
+                    "We can use the sliding window algorithm. Since we only care about substrings without duplicate characters, the sliding window can help us maintain valid substring with its dynamic nature.",
+                    "We can iterate through the given string with index r as the right boundary and l as the left boundary of the window. We use a hash set to check if the character is present in the window or not. When we encounter a character at index r that is already present in the window, we shrink the window by incrementing the l pointer until the window no longer contains any duplicates. Also, we remove characters from the hash set that are excluded from the window as the l pointer moves. At each iteration, we update the result with the length of the current window, r - l + 1, if this length is greater than the current result.",
+                ]
+            },
+            {
+                "main": """You are given a string s consisting of only uppercase english characters and an integer k. You can choose up to k characters of the string and replace them with any other uppercase English character.
+                    After performing at most k replacements, return the length of the longest substring which contains only one distinct character.
+                    If the input is a string s containing 'XYYX' and k is 2, the output should be 4.
+                    If the input is a string s containing 'AAABABB' and k is 1, the output should be 5.""",
+                "difficulty": "medium",
+                "hints": [
+                    "You should aim for a solution with O(n) time and O(m) space, where n is the length of the given string and m is the number of unique characters in the string.",
+                    "Which characters would you replace in a string to make all its characters unique? Can you think with respect to the frequency of the characters?",
+                    "It is always optimal to replace characters with the most frequent character in the string. Why? Because using the most frequent character minimizes the number of replacements required to make all characters in the string identical. How can you find the number of replacements now?",
+                    "The number of replacements is equal to the difference between the length of the string and the frequency of the most frequent character in the string. A brute force solution would be to consider all substrings, use a hash map for frequency counting, and return the maximum length of the substring that has at most k replacements. This would be an O(n^2) solution. Can you think of a better way?",
+                    "We can use the sliding window approach. The window size will be dynamic, and we will shrink the window when the number of replacements exceeds k. The result will be the maximum window size observed at each iteration.",
+                ]
+            },
+            {
+                "main": """Y.""",
+                "difficulty": "medium",
+                "hints": [
+                    "",
+                ]
+            },
+        ],
+        "hard": [
+            {
+                "main": """Given two strings s and t, return the shortest substring of s such that every character in t, including duplicates, is present in the substring. If such a substring does not exist, return an empty string "".
+                    You may assume that the correct output is always unique.
+                    If the input is a string s containing 'OUZODYXAZV' and t containing 'XYZ', the output should be 'YXAZ'.
+                    If the input is a string s containing 'xyz' and t containing 'xyz', the output should be 'xyz'.
+                    If the input is a string s containing 'x' and t containing 'xy', the output should be ''""",
+                "difficulty": "hard",
+                "hints": [
+                    "You should aim for a solution with O(n) time and O(m) space, where n is the length of the string s and m is the number of unique characters in s and t.",
+                    "A brute force solution would involve checking every substring of s against t and returning the minimum length valid substring. This would be an O(n^2) solution. Can you think of a better way? Maybe you should think in terms of frequency of characters.",
+                    "We need to find substrings in s that should have atleast the characters of t. We can use hash maps to maintain the frequencies of characters. It will be O(1) for lookups. Can you think of an algorithm now?",
+                    "We can use a dynamically sized sliding window approach on s. We iterate through s while maintaining a window. If the current window contains at least the frequency of characters from t, we update the result and shrink the window until it is valid.",
+                    "We should ensure that we maintain the result substring and only update it if we find a shorter valid substring. Additionally, we need to keep track of the result substring's length so that we can return an empty string if no valid substring is found.",
+                ]
+            },
+        ]
+    },
     "consulting": [
         {
             "case": """The client is a manufacturer and distributor of infant formula. They sell their product nationwide, and are in the middle 
@@ -83,26 +243,6 @@ INTERVIEW_QUESTION_BANK = {
                     22 months of their child's life.""",
             ]
         },
-        {
-            "case": "A retail chain is experiencing declining profits. How would you diagnose the problem?",
-            "follow_ups": [
-                "What data would you request first?",
-                "What are the main drivers of profitability in retail?",
-                "Suppose costs have increased by 10% but revenue is flat. What would you investigate next?",
-                "If you find that one region is underperforming, how would you analyze the cause?",
-                "What recommendations would you make to improve profitability?"
-            ]
-        },
-        {
-            "case": "A tech startup wants to double its user base in one year. How would you help them achieve this?",
-            "follow_ups": [
-                "What growth levers would you consider?",
-                "How would you prioritize between marketing, product, and partnerships?",
-                "Suppose the current user base is 100,000 and the average monthly growth rate is 5%. What growth rate is needed to reach the goal?",
-                "What risks or challenges might the company face?",
-                "What is your final recommendation?"
-            ]
-        }
     ],
     "banking": [
         {
@@ -111,49 +251,12 @@ INTERVIEW_QUESTION_BANK = {
              savings accounts and loans, while investment banking focuses on services like underwriting,
               mergers and acquisitions, and raising capital for corporations."""
         },
-        {
-            "question": "Explain the concept of fractional reserve banking.",
-            "template_answer": """Fractional reserve banking is a system where banks keep a fraction of deposits 
-            as reserves and lend out the rest, allowing money creation through the lending process."""
-        },
-        {
-            "question": "What is Basel III and why is it important?",
-            "template_answer": """Basel III is a set of international banking regulations developed to strengthen 
-            regulation, supervision, and risk management within the banking sector, focusing on capital adequacy, 
-            stress testing, and market liquidity risk."""
-        },
-        {
-            "question": "How do banks manage credit risk?",
-            "template_answer": """Banks manage credit risk by assessing borrowers' creditworthiness, setting 
-            lending limits, requiring collateral, and diversifying their loan portfolios."""
-        },
-        {
-            "question": "What is the role of the Federal Reserve?",
-            "template_answer": """The Federal Reserve is the central bank of the United States, responsible for setting 
-            monetary policy, regulating banks, maintaining financial stability, and providing financial services to the government and other banks."""
-        }
     ],
     "quantitative_finance": [
         {
             "question": "What is the Black-Scholes model used for?",
             "template_answer": "The Black-Scholes model is used to price European options and calculate theoretical values based on factors like volatility, time, and risk-free rate."
         },
-        {
-            "question": "Explain the concept of Value at Risk (VaR).",
-            "template_answer": "Value at Risk (VaR) is a risk measure that estimates the maximum potential loss of a portfolio over a given time period at a certain confidence level."
-        },
-        {
-            "question": "What is a martingale process in finance?",
-            "template_answer": "A martingale is a stochastic process where the expected value of the next observation is equal to the present value, given all prior information. It's used in modeling fair games and financial markets."
-        },
-        {
-            "question": "How do you simulate a random walk in Python?",
-            "template_answer": "You can simulate a random walk using numpy by cumulatively summing random steps, e.g., np.cumsum(np.random.randn(n))."
-        },
-        {
-            "question": "What is the difference between correlation and cointegration?",
-            "template_answer": "Correlation measures the linear relationship between two variables, while cointegration indicates a long-term equilibrium relationship between two or more time series."
-        }
     ],
     "behavioral": [
         {
@@ -164,36 +267,43 @@ INTERVIEW_QUESTION_BANK = {
             "question": "Why do you want to work at this company?",
             "template_answer": "Show you've researched the company and connect your goals/values to theirs."
         },
-        {
-            "question": "Describe a time you faced a challenge at work and how you handled it.",
-            "template_answer": "Describe the situation, your actions, and the outcome, focusing on problem-solving and resilience."
-        },
-        {
-            "question": "Tell me about a time you worked on a team project.",
-            "template_answer": "Describe your role, how you collaborated, and what the team achieved."
-        },
-        {
-            "question": "What are your greatest strengths and weaknesses?",
-            "template_answer": "Identify a key strength with an example, and a real weakness with steps you are taking to improve."
-        }
     ]
 }
 
 
-async def get_next_interview_question(industry, asked_questions):
+async def get_next_interview_question(industry, asked_questions, difficulty=None):
     """
-    Get the next unasked interview question for the specified industry.
+    Get the next unasked interview question for the specified industry and difficulty.
     
     Args:
         industry (str): The interview industry (e.g., 'software_engineering')
         asked_questions (list): List of previously asked questions
+        difficulty (str, optional): Question difficulty ('easy', 'medium', 'hard')
     
     Returns:
         dict: Next question data or None if no questions available
     """
-    logger.info(f"Getting next question for industry={industry}, {len(asked_questions)} already asked")
+    logger.info(f"Getting next question for industry={industry}, difficulty={difficulty}, {len(asked_questions)} already asked")
     
-    available_questions = INTERVIEW_QUESTION_BANK.get(industry, [])
+    # Get the industry's question data
+    industry_questions = INTERVIEW_QUESTION_BANK.get(industry, [])
+
+    # Check if it's the NEW format (dict with difficulties) or OLD format (list)
+    if isinstance(industry_questions, dict):
+        # NEW FORMAT (Software Engineering only)
+        if difficulty and difficulty in industry_questions:
+            # User selected a specific difficulty -> use only those questions
+            available_questions = industry_questions[difficulty]  # e.g., industry_questions['easy']
+        else:
+            # No difficulty selected -> combine ALL difficulty levels
+            available_questions = []
+            for diff_level in ['easy', 'medium', 'hard']:
+                if diff_level in industry_questions:
+                    available_questions.extend(industry_questions[diff_level])
+    else:
+        # OLD FORMAT (Consulting, Banking, Behavioral, etc.)
+        available_questions = industry_questions  # Use the list directly
+    
     if not available_questions:
         return {"question": None}
     
