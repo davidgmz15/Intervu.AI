@@ -1,8 +1,8 @@
-# PrepPal AI
+# Intervu.AI
 
 ## Overview
 
-PrepPal AI is a web-based application that simulates real interview scenarios for a variety of industries, including behavioral, software engineering, consulting, banking/finance, and quantitative finance. It uses voice interaction and AI-driven feedback to help users practice and improve their interview skills in a realistic, supportive environment.
+Intervu.AI is a web-based application that simulates real interview scenarios for a variety of industries, including behavioral, software engineering, consulting, banking/finance, and quantitative finance. It uses voice interaction and AI-driven feedback to help users practice and improve their interview skills in a realistic, supportive environment.
 
 ## Features
 - **Voice-based Interview Practice:** Speak your answers and interact with the AI agent in real time.
